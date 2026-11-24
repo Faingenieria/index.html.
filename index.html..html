@@ -1,0 +1,2827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SGC Actas - Ingeniería Integral</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-yellow: #F5B318;
+      --brand-dark: #2D3136;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #F8F9FA;
+      color: #2D3136;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .sig-canvas {
+      touch-action: none;
+      background: #FFFFFF;
+      cursor: crosshair;
+    }
+    .sgc-sheet {
+      width: 100%;
+      max-width: 780px;
+      background: #ffffff;
+      color: #000000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      border: 1.5px solid #000;
+      margin: 0 auto;
+    }
+    .sgc-sheet table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .sgc-sheet th, .sgc-sheet td {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="pb-24 lg:pb-8 min-h-screen flex flex-col lg:flex-row">
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col items-end pointer-events-none space-y-2 max-w-sm w-full px-4"></div>
+
+  <!-- ==================== SIDEBAR DESKTOP (PC) ==================== -->
+  <aside id="desktopSidebar" class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[#2D3136] text-white border-r-4 border-[#F5B318] z-30 shadow-xl">
+    <div class="p-4 border-b border-white/10 flex flex-col items-center gap-2">
+      <div id="sidebarLogoBox" class="bg-white rounded-xl px-3 py-2 w-full flex items-center justify-center shadow-sm"></div>
+      <div class="text-center">
+        <span class="text-[10px] font-extrabold tracking-widest uppercase text-[#F5B318]">Sistema de Gestión de Calidad</span>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+      <button onclick="switchTab('inicio')" id="side-inicio" class="side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold bg-[#F5B318] text-[#2D3136] shadow-sm transition">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span>Panel e Historial</span>
+      </button>
+      <button onclick="switchTab('entrega')" id="side-entrega" class="side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition">
+        <i data-lucide="file-output" class="w-4 h-4 text-[#F5B318]"></i>
+        <span>Entrega (FM-AF-011)</span>
+      </button>
+      <button onclick="switchTab('devolucion')" id="side-devolucion" class="side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition">
+        <i data-lucide="file-input" class="w-4 h-4 text-emerald-400"></i>
+        <span>Devolución (FM-AF-016)</span>
+      </button>
+      <button onclick="switchTab('inventario')" id="side-inventario" class="side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition">
+        <i data-lucide="package" class="w-4 h-4 text-sky-400"></i>
+        <span>Inventario & Stock</span>
+      </button>
+      <button onclick="switchTab('datos')" id="side-datos" class="side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition">
+        <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+        <span>Personal & Drive</span>
+      </button>
+    </nav>
+
+    <div class="p-4 border-t border-white/10 space-y-2">
+      <div id="sidebarSyncBadge" class="text-[11px] px-3 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Sincronizado / Autoguardado</span>
+      </div>
+      <button type="button" onclick="toggleSignOnlyMode(true)" class="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-amber-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
+        <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i> Modo Solo Firma
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== WRAPPER DERECHO ==================== -->
+  <div class="flex-1 lg:pl-64 flex flex-col min-w-0">
+
+    <!-- HEADER SUPERIOR -->
+    <header class="sticky top-0 z-20 bg-[#2D3136] lg:bg-white text-white lg:text-[#2D3136] shadow-sm border-b-4 lg:border-b border-[#F5B318] lg:border-gray-200">
+      <div class="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 lg:hidden">
+          <div id="headerLogoBox" class="bg-white rounded-lg px-2.5 py-1 shadow-sm flex items-center justify-center"></div>
+          <div>
+            <h1 class="text-xs font-extrabold tracking-wide leading-tight text-white">INGENIERÍA INTEGRAL</h1>
+            <p class="text-[10px] text-[#F5B318] font-semibold">SGC · Control de Actas</p>
+          </div>
+        </div>
+
+        <div class="hidden lg:flex items-center gap-2">
+          <h2 id="desktopPageTitle" class="text-base font-extrabold text-[#2D3136]">Panel Principal e Historial de Cumplidos</h2>
+          <span class="text-xs text-gray-400">|</span>
+          <span class="text-xs text-gray-500 font-medium">Sistema de Gestión de Calidad</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="cloudStatusBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/20 lg:bg-emerald-50 text-emerald-300 lg:text-emerald-700 border border-emerald-500/40 lg:border-emerald-200 font-bold">
+            ● Sincronizado / Autoguardado activo
+          </span>
+          <button id="exitSignOnlyBtn" onclick="toggleSignOnlyMode(false)" class="hidden text-[10px] bg-[#F5B318] text-[#2D3136] font-extrabold px-2.5 py-1 rounded-lg shadow">
+            Salir Modo Firma
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER MODO SOLO FIRMA -->
+    <div id="signOnlyBanner" class="hidden bg-amber-100 border-b border-amber-300 text-amber-950 px-4 py-2 text-xs text-center font-bold">
+      Modo Colaborador Activo: Verifique los equipos relacionados y plasme su firma en el recuadro.
+    </div>
+
+    <!-- VISTA EXCLUSIVA COLABORADOR (ENLACE REMOTO PRELLENADO) -->
+    <section id="remoteSignerContainer" class="hidden max-w-xl mx-auto px-3 pt-4 space-y-4 w-full">
+      <div class="bg-white rounded-2xl shadow-lg border-2 border-[#F5B318] overflow-hidden">
+        <div class="bg-[#2D3136] text-white px-4 py-3 flex items-center justify-between">
+          <div>
+            <span id="remDocCode" class="text-[10px] uppercase tracking-wider text-[#F5B318] font-bold">FM-AF-011</span>
+            <h2 id="remDocTitle" class="text-base font-bold">Acta para Firma Digital</h2>
+          </div>
+          <span id="remDocNumero" class="text-xs bg-white/15 px-2.5 py-1 rounded-lg font-mono font-bold"># 1</span>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-bold text-amber-800 uppercase">Colaborador</p>
+              <p id="remColaborador" class="text-sm font-extrabold text-gray-900"></p>
+              <p id="remCedulaFecha" class="text-xs text-gray-600"></p>
+            </div>
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0">
+              Listo para firmar
+            </span>
+          </div>
+
+          <div>
+            <h3 class="text-xs font-extrabold text-gray-700 uppercase mb-2">Elementos Relacionados</h3>
+            <div id="remItemsList" class="space-y-1.5"></div>
+          </div>
+
+          <div id="remNotaBox" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-xs text-gray-700"></div>
+
+          <div class="border-2 border-dashed border-[#2D3136] rounded-2xl p-3 bg-gray-50 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-gray-900 flex items-center gap-1.5">
+                <i data-lucide="pen-tool" class="w-4 h-4 text-amber-600"></i>
+                Firme con su dedo aquí abajo:
+              </span>
+              <button type="button" onclick="clearDirectRemoteCanvas()" class="text-[11px] font-bold text-red-600 hover:underline px-2 py-0.5 bg-red-50 rounded-lg">
+                Borrar trazo
+              </button>
+            </div>
+            <div class="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-inner">
+              <canvas id="directRemoteCanvas" class="sig-canvas w-full h-44 block"></canvas>
+            </div>
+          </div>
+
+          <button type="button" onclick="submitDirectRemoteSignature()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-sm">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            Firmar y Finalizar Acta
+          </button>
+        </div>
+      </div>
+
+      <div id="remoteSuccessCard" class="hidden bg-white rounded-2xl shadow-lg border-2 border-emerald-500 p-6 text-center space-y-3">
+        <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+          <i data-lucide="check" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-lg font-extrabold text-gray-900">¡Acta Firmada con Éxito!</h3>
+        <p class="text-xs text-gray-600">Tu firma ha quedado registrada en el formato oficial SGC de Ingeniería Integral.</p>
+        <div class="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+          <button type="button" onclick="downloadCurrentPDF()" class="py-3 px-4 bg-[#2D3136] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="download" class="w-4 h-4 text-[#F5B318]"></i> Descargar Copia PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CONTENEDOR PRINCIPAL ==================== -->
+    <main id="mainAppContainer" class="max-w-6xl mx-auto px-3 sm:px-6 pt-4 w-full flex-1">
+
+      <!-- ==================== PESTAÑA 1: PANEL PRINCIPAL E HISTORIAL ==================== -->
+      <section id="tab-inicio" class="tab-panel space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button type="button" onclick="switchTab('entrega')" class="group bg-[#F5B318] hover:bg-amber-400 active:scale-[0.99] text-[#2D3136] p-4 rounded-2xl shadow-md flex items-center justify-between transition">
+            <div class="flex items-center gap-3.5 text-left">
+              <div class="w-12 h-12 rounded-xl bg-[#2D3136] text-[#F5B318] flex items-center justify-center shrink-0 shadow">
+                <i data-lucide="file-output" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider opacity-80">Formato FM-AF-011</span>
+                <h3 class="text-base font-extrabold leading-tight">Nueva Entrega</h3>
+                <p class="text-xs font-medium opacity-90">Asignar equipos y herramientas</p>
+              </div>
+            </div>
+            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition"></i>
+          </button>
+
+          <button type="button" onclick="switchTab('devolucion')" class="group bg-[#2D3136] hover:bg-gray-800 active:scale-[0.99] text-white p-4 rounded-2xl shadow-md flex items-center justify-between transition">
+            <div class="flex items-center gap-3.5 text-left">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow">
+                <i data-lucide="file-input" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Formato FM-AF-016</span>
+                <h3 class="text-base font-extrabold leading-tight">Nueva Devolución</h3>
+                <p class="text-xs text-gray-300">Reintegrar elementos a almacén</p>
+              </div>
+            </div>
+            <i data-lucide="arrow-right" class="w-5 h-5 text-[#F5B318] group-hover:translate-x-1 transition"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] font-bold text-gray-500">Entregas Activas</span>
+              <span id="kpiEntregas" class="text-xl font-extrabold text-[#2D3136]">0</span>
+            </div>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] font-bold text-gray-500">Pendientes / Parcial</span>
+              <span id="kpiPendientes" class="text-xl font-extrabold text-sky-700">0</span>
+            </div>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] font-bold text-gray-500">Actas Cumplidas</span>
+              <span id="kpiCumplidos" class="text-xl font-extrabold text-emerald-600">0</span>
+            </div>
+          </div>
+
+          <div onclick="switchTab('inventario')" class="cursor-pointer bg-white p-3.5 rounded-2xl shadow-sm border border-gray-200 hover:border-red-300 flex items-center gap-3 transition">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[11px] font-bold text-gray-500">Alertas Stock Bajo</span>
+              <span id="kpiStockBajo" class="text-xl font-extrabold text-red-600">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-extrabold text-[#2D3136]">Registro General e Historial de Cumplidos</h3>
+              <p class="text-xs text-gray-500">Toca cualquier registro para abrir su expediente digital, PDF o Excel SGC.</p>
+            </div>
+            <button type="button" onclick="exportAllExcel()" class="self-start sm:self-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Reporte Excel
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+              <input id="searchActasInput" oninput="renderActasList()" type="text" placeholder="Buscar por colaborador, cédula, serial o # de acta..." class="w-full bg-gray-50 border border-gray-300 rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#F5B318]" />
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-[11px] font-bold">
+              <button type="button" data-af="ALL" onclick="setActasFilter('ALL')" class="af-btn px-3 py-2 rounded-xl bg-[#2D3136] text-white">Todos</button>
+              <button type="button" data-af="PENDING" onclick="setActasFilter('PENDING')" class="af-btn px-3 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">Pendiente</button>
+              <button type="button" data-af="PARTIAL" onclick="setActasFilter('PARTIAL')" class="af-btn px-3 py-2 rounded-xl bg-sky-50 text-sky-800 border border-sky-200">Parcial</button>
+              <button type="button" data-af="CUMPLIDO" onclick="setActasFilter('CUMPLIDO')" class="af-btn px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">Cumplido ✓</button>
+            </div>
+          </div>
+
+          <div id="actasListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PESTAÑA 2: ENTREGA DE MATERIALES (FM-AF-011) ==================== -->
+      <section id="tab-entrega" class="tab-panel hidden space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-[#2D3136] text-white px-4 py-3.5 flex flex-wrap items-center justify-between gap-2 border-b-4 border-[#F5B318]">
+            <div>
+              <span class="text-[10px] uppercase tracking-wider text-[#F5B318] font-extrabold">CÓDIGO: FM-AF-011 · VERSIÓN: 03 · FECHA: 02/08/2023</span>
+              <h2 class="text-base font-extrabold">ACTA DE ENTREGA DE EQUIPOS Y HERRAMIENTAS</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-white/10 px-2.5 py-1 rounded-lg font-mono font-bold">Barranquilla</span>
+            </div>
+          </div>
+
+          <div class="p-4 sm:p-5 space-y-5">
+            <div class="border border-gray-200 rounded-2xl p-4 bg-[#F8F9FA] space-y-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-[#F5B318] text-[#2D3136] font-extrabold text-xs flex items-center justify-center shadow-sm">1</span>
+                <h3 class="text-sm font-extrabold text-[#2D3136]">Datos del Colaborador y Salida</h3>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Salida #</label>
+                  <input id="entNumero" type="number" class="w-full bg-amber-50 border border-amber-300 font-extrabold text-gray-900 rounded-xl px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Fecha</label>
+                  <input id="entFecha" type="date" class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Ciudad</label>
+                  <input id="entCiudad" type="text" value="Barranquilla" class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">Señor(a) Colaborador que recibe *</label>
+                  <input list="personalDatalist" id="entColaborador" oninput="onSelectColaborador('ent')" placeholder="Seleccione o escriba nombre completo..." class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-semibold focus:border-[#F5B318] focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">Cédula de Ciudadanía *</label>
+                  <input id="entCedula" type="text" placeholder="Autocompletado..." class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono font-bold" />
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-white space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-[#F5B318] text-[#2D3136] font-extrabold text-xs flex items-center justify-center shadow-sm">2</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Selección Rápida de Equipos (<span id="entItemsCount">0</span>)</h3>
+                </div>
+                <button type="button" onclick="openItemModal('ent')" class="flex items-center gap-1.5 bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold px-4 py-2.5 rounded-xl shadow-sm">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i> + Agregar Elemento
+                </button>
+              </div>
+
+              <div id="entItemsList" class="space-y-2"></div>
+
+              <div class="pt-1">
+                <label class="block text-[11px] font-bold text-gray-700 mb-1">Nota / Observaciones del Acta</label>
+                <textarea id="entNota" rows="2" placeholder="Ej: Entrega de equipo para el cargo de..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs sm:text-sm"></textarea>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-[#F8F9FA] space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-[#F5B318] text-[#2D3136] font-extrabold text-xs flex items-center justify-center shadow-sm">3</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Evidencia Fotográfica</h3>
+                </div>
+                <label class="cursor-pointer bg-white hover:bg-amber-50 text-[#2D3136] border-2 border-dashed border-[#F5B318] text-xs font-extrabold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="camera" class="w-4 h-4 text-amber-600"></i> Tomar / Adjuntar Fotos
+                  <input type="file" accept="image/*" capture="environment" multiple onchange="handlePhotoCapture(event, 'ent')" class="hidden" />
+                </label>
+              </div>
+              <div id="entPhotosGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-2.5"></div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-white space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-[#F5B318] text-[#2D3136] font-extrabold text-xs flex items-center justify-center shadow-sm">4</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Firmas Digitales en Pantalla</h3>
+                </div>
+                <button type="button" onclick="toggleSignOnlyMode(true)" class="text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold px-3 py-1.5 rounded-xl border border-amber-300 flex items-center gap-1">
+                  <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Pasar dispositivo para firmar
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="border border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-800">Autorizado por:</span>
+                    <span id="badge-ent-autorizado" class="text-[10px] text-gray-600 bg-gray-200 px-2 py-0.5 rounded font-bold">Opcional</span>
+                  </div>
+                  <div id="preview-ent-autorizado" class="h-20 bg-white border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <input id="entAutorizadoNombre" type="text" placeholder="Nombre quien autoriza" class="w-full mb-2 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                  <button type="button" onclick="openSignatureModal('ent', 'autorizado', 'Autorizado por')" class="w-full py-2.5 bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold rounded-xl">
+                    Firmar en Pantalla
+                  </button>
+                </div>
+
+                <div class="border border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-800">Entregado por: *</span>
+                    <span id="badge-ent-entregado" class="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold">Pendiente</span>
+                  </div>
+                  <div id="preview-ent-entregado" class="h-20 bg-white border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <input id="entEntregadoNombre" type="text" placeholder="Nombre quien entrega" class="w-full mb-2 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                  <button type="button" onclick="openSignatureModal('ent', 'entregado', 'Entregado por')" class="w-full py-2.5 bg-[#2D3136] hover:bg-gray-800 text-white text-xs font-bold rounded-xl">
+                    Firmar en Pantalla
+                  </button>
+                </div>
+
+                <div class="border-2 border-[#F5B318] rounded-xl p-3 bg-amber-50/40 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-900">Recibido por: *</span>
+                    <span id="badge-ent-recibido" class="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold">Pendiente</span>
+                  </div>
+                  <div id="preview-ent-recibido" class="h-20 bg-white border border-dashed border-amber-400 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <p id="entRecibidoAutoLabel" class="text-[11px] font-bold text-gray-700 truncate mb-2 px-1">Colaborador seleccionado</p>
+                  <button type="button" onclick="openSignatureModal('ent', 'recibido', 'Recibido por (Colaborador)')" class="w-full py-2.5 bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold rounded-xl shadow-sm">
+                    Firmar Colaborador
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button type="button" onclick="shareActaLink('entrega')" class="w-full py-3.5 bg-[#2D3136] hover:bg-gray-800 text-[#F5B318] font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <i data-lucide="share-2" class="w-5 h-5"></i>
+                Enviar Enlace de Firma al Celular
+              </button>
+              <button type="button" onclick="saveActa('entrega')" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                Confirmar Entrega (FM-AF-011)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PESTAÑA 3: DEVOLUCIÓN DE MATERIALES (FM-AF-016) ==================== -->
+      <section id="tab-devolucion" class="tab-panel hidden space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-[#2D3136] text-white px-4 py-3.5 flex flex-wrap items-center justify-between gap-2 border-b-4 border-emerald-500">
+            <div>
+              <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-extrabold">CÓDIGO: FM-AF-016 · VERSIÓN: 02 · FECHA: 02/08/2023</span>
+              <h2 class="text-base font-extrabold">ACTA DE DEVOLUCION DE EQUIPOS Y HERRAMIENTAS</h2>
+            </div>
+            <span class="text-xs bg-white/10 px-2.5 py-1 rounded-lg font-mono font-bold">Barranquilla</span>
+          </div>
+
+          <div class="p-4 sm:p-5 space-y-5">
+            <div class="bg-amber-50 border-2 border-[#F5B318] p-4 rounded-2xl space-y-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i>
+                <label class="block text-xs font-extrabold text-amber-950 uppercase">Vinculación Inteligente: Cargar Salida # Activa</label>
+              </div>
+              <select id="devLinkSalida" onchange="onLinkSalidaChange()" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-bold text-gray-900">
+                <option value="">-- Seleccionar Salida # pendiente o registrar devolución manual --</option>
+              </select>
+              <p class="text-[11px] text-amber-900">Al vincular una Salida #, puedes devolver todos los ítems o ajustar las cantidades para una devolución parcial.</p>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-[#F8F9FA] space-y-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">1</span>
+                <h3 class="text-sm font-extrabold text-[#2D3136]">Datos de Quien Devuelve</h3>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Entrega # (Ref)</label>
+                  <input id="devNumero" type="number" class="w-full bg-emerald-50 border border-emerald-300 font-extrabold text-gray-900 rounded-xl px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Fecha</label>
+                  <input id="devFecha" type="date" class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-[11px] font-bold text-gray-600 mb-1">Ciudad</label>
+                  <input id="devCiudad" type="text" value="Barranquilla" class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">Señor(a) Colaborador que devuelve *</label>
+                  <input list="personalDatalist" id="devColaborador" oninput="onSelectColaborador('dev')" placeholder="Seleccione colaborador..." class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-semibold" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">Cédula de Ciudadanía *</label>
+                  <input id="devCedula" type="text" placeholder="Cédula de ciudadanía" class="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono font-bold" />
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-white space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">2</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Elementos Devueltos (<span id="devItemsCount">0</span>)</h3>
+                </div>
+                <button type="button" onclick="openItemModal('dev')" class="flex items-center gap-1.5 bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold px-4 py-2.5 rounded-xl shadow-sm">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i> + Agregar Elemento
+                </button>
+              </div>
+
+              <div id="devItemsList" class="space-y-2"></div>
+
+              <div class="pt-1">
+                <label class="block text-[11px] font-bold text-gray-700 mb-1">Nota / Estado de recepción</label>
+                <textarea id="devNota" rows="2" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs sm:text-sm">Se recibe devolución de herramientas entregadas.</textarea>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-[#F8F9FA] space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">3</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Evidencia Fotográfica de Devolución</h3>
+                </div>
+                <label class="cursor-pointer bg-white hover:bg-emerald-50 text-[#2D3136] border-2 border-dashed border-emerald-500 text-xs font-extrabold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="camera" class="w-4 h-4 text-emerald-600"></i> Tomar / Adjuntar Fotos
+                  <input type="file" accept="image/*" capture="environment" multiple onchange="handlePhotoCapture(event, 'dev')" class="hidden" />
+                </label>
+              </div>
+              <div id="devPhotosGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-2.5"></div>
+            </div>
+
+            <div class="border border-gray-200 rounded-2xl p-4 bg-white space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-sm">4</span>
+                  <h3 class="text-sm font-extrabold text-[#2D3136]">Firmas Digitales en Pantalla</h3>
+                </div>
+                <button type="button" onclick="toggleSignOnlyMode(true)" class="text-[11px] bg-amber-100 hover:bg-amber-200 text-amber-950 font-extrabold px-3 py-1.5 rounded-xl border border-amber-300 flex items-center gap-1">
+                  <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Pasar dispositivo para firmar
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="border border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-800">Autorizado por:</span>
+                    <span id="badge-dev-autorizado" class="text-[10px] text-gray-600 bg-gray-200 px-2 py-0.5 rounded font-bold">Opcional</span>
+                  </div>
+                  <div id="preview-dev-autorizado" class="h-20 bg-white border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <input id="devAutorizadoNombre" type="text" placeholder="Nombre quien autoriza" class="w-full mb-2 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                  <button type="button" onclick="openSignatureModal('dev', 'autorizado', 'Autorizado por')" class="w-full py-2.5 bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold rounded-xl">
+                    Firmar en Pantalla
+                  </button>
+                </div>
+
+                <div class="border-2 border-[#F5B318] rounded-xl p-3 bg-amber-50/40 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-900">Entregado por: *</span>
+                    <span id="badge-dev-entregado" class="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold">Pendiente</span>
+                  </div>
+                  <div id="preview-dev-entregado" class="h-20 bg-white border border-dashed border-amber-400 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <p class="text-[11px] font-bold text-gray-700 mb-2 px-1">Quien devuelve el equipo</p>
+                  <button type="button" onclick="openSignatureModal('dev', 'entregado', 'Entregado por (Colaborador)')" class="w-full py-2.5 bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold rounded-xl shadow-sm">
+                    Firmar Quien Devuelve
+                  </button>
+                </div>
+
+                <div class="border border-gray-300 rounded-xl p-3 bg-gray-50 flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-xs font-extrabold text-gray-800">Recibido por: *</span>
+                    <span id="badge-dev-recibido" class="text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold">Pendiente</span>
+                  </div>
+                  <div id="preview-dev-recibido" class="h-20 bg-white border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-[11px] text-gray-400 overflow-hidden mb-2">
+                    Sin firma
+                  </div>
+                  <input id="devRecibidoNombre" type="text" value="ROBERTO JIMENEZ PACHECO" placeholder="Nombre quien recibe" class="w-full mb-2 bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs" />
+                  <button type="button" onclick="openSignatureModal('dev', 'recibido', 'Recibido por (Almacén)')" class="w-full py-2.5 bg-[#2D3136] hover:bg-gray-800 text-white text-xs font-bold rounded-xl">
+                    Firmar Almacén
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button type="button" onclick="shareActaLink('devolucion')" class="w-full py-3.5 bg-[#2D3136] hover:bg-gray-800 text-[#F5B318] font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <i data-lucide="share-2" class="w-5 h-5"></i>
+                Enviar Enlace de Firma al Celular
+              </button>
+              <button type="button" onclick="saveActa('devolucion')" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                Confirmar Devolución (FM-AF-016)
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PESTAÑA 4: INVENTARIO (GESTIÓN DE MATERIALES Y EQUIPOS) ==================== -->
+      <section id="tab-inventario" class="tab-panel hidden space-y-4">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-extrabold text-[#2D3136]">Inventario de Materiales y Equipos</h3>
+              <p class="text-xs text-gray-500">El stock se descuenta automáticamente en entregas y se reintegra en devoluciones.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="resetDefaultInventory()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 text-xs font-bold px-3 py-2.5 rounded-xl flex items-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Recargar Base
+              </button>
+              <label class="cursor-pointer bg-[#2D3136] hover:bg-gray-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="upload" class="w-4 h-4 text-[#F5B318]"></i> Importar Excel (.xlsx)
+                <input type="file" accept=".xlsx,.xls,.csv" onchange="importInventoryExcel(event)" class="hidden" />
+              </label>
+              <button type="button" onclick="openNewCatalogModal()" class="bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> + Nuevo Material
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+              <input id="searchInvInput" oninput="renderInventoryList()" type="text" placeholder="Buscar por código, marca, descripción o serial..." class="w-full bg-gray-50 border border-gray-300 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#F5B318]" />
+            </div>
+            <label class="flex items-center gap-2 text-xs font-bold text-gray-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl cursor-pointer select-none">
+              <input id="onlyStockCheck" onchange="renderInventoryList()" type="checkbox" class="accent-[#F5B318] w-4 h-4" />
+              <span>Solo con stock disponible</span>
+            </label>
+          </div>
+          <p id="invCountLabel" class="text-[11px] text-gray-500 font-semibold"></p>
+
+          <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-xl max-h-[65vh]">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="sticky top-0 z-10">
+                <tr class="bg-gray-100 text-gray-700 font-extrabold border-b border-gray-200">
+                  <th class="p-2.5">Código</th>
+                  <th class="p-2.5">Unidad / Marca</th>
+                  <th class="p-2.5">Nombre / Descripción</th>
+                  <th class="p-2.5 text-center">Estado</th>
+                  <th class="p-2.5 text-center">Cantidad</th>
+                  <th class="p-2.5 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+
+          <div id="inventoryCardsMobile" class="md:hidden space-y-2 max-h-[60vh] overflow-y-auto"></div>
+        </div>
+      </section>
+
+      <!-- ==================== PESTAÑA 5: DIRECTORIO DE PERSONAL Y CONFIGURACIÓN DRIVE ==================== -->
+      <section id="tab-datos" class="tab-panel hidden space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-extrabold text-[#2D3136]">Directorio de Personal (<span id="personalCountBadge">21</span>)</h3>
+                <p class="text-xs text-gray-500">Autocompleta cédulas en las actas SGC.</p>
+              </div>
+              <div class="flex gap-1.5">
+                <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold px-2.5 py-2 rounded-xl border border-gray-300 flex items-center gap-1">
+                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Excel
+                  <input type="file" accept=".xlsx,.xls,.csv" onchange="importPersonalExcel(event)" class="hidden" />
+                </label>
+                <button type="button" onclick="openNewPersonalModal()" class="bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] text-xs font-extrabold px-3 py-2 rounded-xl flex items-center gap-1">
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Agregar
+                </button>
+              </div>
+            </div>
+
+            <input id="searchPersonalInput" oninput="renderPersonalDirectory()" type="text" placeholder="Buscar colaborador por nombre o cédula..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#F5B318]" />
+            <div id="personalDirectoryList" class="space-y-1.5 max-h-80 overflow-y-auto pr-1"></div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl shrink-0">
+                  <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-extrabold text-gray-900">Conexión Carpeta Google Drive y Autoguardado</h3>
+                  <p class="text-xs text-gray-600 mt-0.5">Respalda automáticamente cada acta, foto y firma en tu carpeta de Google Drive.</p>
+                </div>
+              </div>
+
+              <div class="space-y-2.5 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">URL del Conector Google Apps Script (Web App)</label>
+                  <input id="driveScriptUrl" type="url" placeholder="https://script.google.com/macros/s/..../exec" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono" />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-gray-700 mb-1">ID de Carpeta en Google Drive</label>
+                  <input id="driveFolderId" type="text" placeholder="Ej: 1A2b3C4d5E6f7G8h9I0j" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-mono" />
+                </div>
+                <label class="flex items-center gap-2 text-xs font-bold text-gray-800 pt-1 cursor-pointer">
+                  <input id="driveAutoSyncCheck" type="checkbox" checked class="w-4 h-4 accent-emerald-600" />
+                  <span>Autoguardado automático en Drive al confirmar actas</span>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="saveDriveConfig()" class="bg-[#2D3136] hover:bg-gray-800 text-white text-xs font-bold py-2.5 px-3 rounded-xl">
+                  Guardar Config. Drive
+                </button>
+                <button type="button" onclick="syncNowToDrive()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl">
+                  Sincronizar Ahora
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+              <h3 class="text-sm font-extrabold text-[#2D3136]">Importar / Exportar Respaldos y Plantillas</h3>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="exportFullDatabaseJSON()" class="bg-[#2D3136] text-white text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5">
+                  <i data-lucide="download" class="w-4 h-4 text-[#F5B318]"></i> Exportar .JSON
+                </button>
+                <label class="cursor-pointer bg-emerald-600 text-white text-xs font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5">
+                  <i data-lucide="upload" class="w-4 h-4"></i> Importar .JSON
+                  <input type="file" accept=".json" onchange="importFullDatabaseJSON(event)" class="hidden" />
+                </label>
+                <button type="button" onclick="downloadInventoryTemplate()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-2 px-3 rounded-xl border border-gray-300">
+                  Plantilla Inventario
+                </button>
+                <button type="button" onclick="downloadPersonalTemplate()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold py-2 px-3 rounded-xl border border-gray-300">
+                  Plantilla Personal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== NAVEGACIÓN INFERIOR ERGONÓMICA (MÓVIL THUMB-ZONE) ==================== -->
+  <nav id="bottomNav" class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+    <div class="grid grid-cols-5 h-16">
+      <button onclick="switchTab('inicio')" id="nav-inicio" class="nav-btn flex flex-col items-center justify-center gap-0.5 text-[#2D3136] font-extrabold">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10px]">Inicio</span>
+      </button>
+      <button onclick="switchTab('entrega')" id="nav-entrega" class="nav-btn flex flex-col items-center justify-center gap-0.5 text-gray-400 font-medium">
+        <i data-lucide="file-output" class="w-5 h-5"></i>
+        <span class="text-[10px]">Entrega</span>
+      </button>
+      <button onclick="switchTab('devolucion')" id="nav-devolucion" class="nav-btn flex flex-col items-center justify-center gap-0.5 text-gray-400 font-medium">
+        <i data-lucide="file-input" class="w-5 h-5"></i>
+        <span class="text-[10px]">Devolución</span>
+      </button>
+      <button onclick="switchTab('inventario')" id="nav-inventario" class="nav-btn flex flex-col items-center justify-center gap-0.5 text-gray-400 font-medium">
+        <i data-lucide="package" class="w-5 h-5"></i>
+        <span class="text-[10px]">Inventario</span>
+      </button>
+      <button onclick="switchTab('datos')" id="nav-datos" class="nav-btn flex flex-col items-center justify-center gap-0.5 text-gray-400 font-medium">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span class="text-[10px]">Personal</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- DATALIST PERSONAL -->
+  <datalist id="personalDatalist"></datalist>
+
+  <!-- ==================== MODAL EXPEDIENTE DIGITAL ==================== -->
+  <div id="expedienteModal" class="fixed inset-0 z-50 bg-black/70 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-3xl rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col max-h-[92vh] shadow-2xl">
+      <div class="bg-[#2D3136] text-white px-4 py-3 flex items-center justify-between border-b-4 border-[#F5B318]">
+        <div>
+          <span id="expModalSubtitle" class="text-[10px] font-bold text-[#F5B318] uppercase">Expediente Digital SGC</span>
+          <h3 id="expModalTitle" class="text-sm font-extrabold">Detalle del Registro</h3>
+        </div>
+        <button type="button" onclick="closeExpedienteModal()" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="expedienteBody" class="p-4 overflow-y-auto space-y-4 flex-1 bg-[#F8F9FA]"></div>
+      <div id="expedienteFooter" class="p-3 bg-white border-t border-gray-200 flex flex-wrap gap-2 justify-end"></div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL CREAR / EDITAR MATERIAL ==================== -->
+  <div id="newCatalogModal" class="fixed inset-0 z-50 bg-black/60 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 id="catModalTitle" class="text-sm font-extrabold text-gray-900">Registrar Nuevo Material o Equipo</h3>
+        <button onclick="closeNewCatalogModal()" class="p-1 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="editCatId" />
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Código / Ítem</label>
+          <input id="newCatCodigo" type="text" placeholder="Ej: HER-001" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm uppercase font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Marca / Unidad</label>
+          <input id="newCatMarca" type="text" placeholder="Ej: DEWALT / unidad" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Descripción (incluyendo Serial / IMEI) *</label>
+        <input id="newCatNombre" type="text" placeholder="Ej: TALADRO PERCUTOR BOSCH S/N 12345" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm uppercase" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Cantidad Disponible *</label>
+          <input id="newCatStock" type="number" min="0" step="any" value="1" class="w-full bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-sm font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Estado</label>
+          <select id="newCatEstado" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm font-semibold">
+            <option value="Nuevo en caja">Nuevo en caja</option>
+            <option value="Usado como nuevo">Usado como nuevo</option>
+            <option value="Bueno" selected>Bueno</option>
+            <option value="Regular">Regular</option>
+            <option value="En mantenimiento">En mantenimiento</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" onclick="saveNewCatalogItem()" class="w-full py-3 bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] font-extrabold rounded-xl text-sm shadow">
+        Guardar en Inventario
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL AGREGAR COLABORADOR ==================== -->
+  <div id="newPersonalModal" class="fixed inset-0 z-50 bg-black/60 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-extrabold text-gray-900">Agregar Colaborador al Directorio</h3>
+        <button onclick="closeNewPersonalModal()" class="p-1 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Nombre Completo *</label>
+        <input id="newPerNombre" type="text" placeholder="Ej: CARLOS ANDRES MENDOZA" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm uppercase" />
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Cédula de Ciudadanía *</label>
+        <input id="newPerCedula" type="text" placeholder="Ej: 1140888999" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm font-mono" />
+      </div>
+      <button type="button" onclick="saveNewPersonal()" class="w-full py-3 bg-[#2D3136] hover:bg-gray-800 text-[#F5B318] font-extrabold rounded-xl text-sm shadow">
+        Guardar Colaborador
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL AGREGAR ÍTEM AL ACTA ==================== -->
+  <div id="itemModal" class="fixed inset-0 z-50 bg-black/60 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-4 space-y-3 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-extrabold text-gray-900">Agregar Equipo, Herramienta o Material</h3>
+        <button onclick="closeItemModal()" class="p-1 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Buscar en Inventario (vista previa de stock disponible)</label>
+        <input id="modalInvSearch" oninput="filterModalCatalog()" type="text" placeholder="Escribe nombre de equipo, serial o material..." class="w-full bg-amber-50 border border-amber-300 rounded-xl px-3 py-2 text-sm" />
+        <div id="modalCatalogResults" class="mt-1.5 max-h-36 overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100 bg-white"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Cantidad *</label>
+          <input id="modalItemQty" type="number" min="0.1" step="any" value="1" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Marca</label>
+          <input id="modalItemMarca" type="text" placeholder="Ej: XIAOMI / DEWALT" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Descripción del Elemento *</label>
+        <input id="modalItemDesc" type="text" placeholder="Nombre del equipo o herramienta" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Serial / IMEI (Opcional)</label>
+          <input id="modalItemSerial" type="text" placeholder="Ej: SN: 67515..." class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Estado *</label>
+          <select id="modalItemEstado" class="w-full bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-sm font-semibold">
+            <option value="NUEVO EN CAJA">NUEVO EN CAJA</option>
+            <option value="USADO COMO NUEVO">USADO COMO NUEVO</option>
+            <option value="BUENO" selected>BUENO</option>
+            <option value="REGULAR">REGULAR</option>
+            <option value="DAÑADO">DAÑADO</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 text-xs font-semibold text-gray-700 pt-1 cursor-pointer">
+        <input id="modalSaveToCatalogCheck" type="checkbox" checked class="w-4 h-4 accent-[#F5B318]" />
+        <span>Registrar en el catálogo de inventario si es nuevo</span>
+      </label>
+
+      <button type="button" onclick="confirmAddItem()" class="w-full py-3 bg-[#2D3136] hover:bg-gray-800 text-[#F5B318] font-extrabold rounded-xl text-sm shadow">
+        Agregar a la Tabla del Acta
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DE FIRMA TÁCTIL ==================== -->
+  <div id="signatureModal" class="fixed inset-0 z-50 bg-black/75 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-3 shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 id="sigModalTitle" class="text-sm font-extrabold text-gray-900">Firma Digital</h3>
+        <button type="button" onclick="closeSignatureModal()" class="p-1 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-[11px] text-gray-500">Firme con su dedo, lápiz táctil o mouse dentro del recuadro blanco:</p>
+      <div class="border-2 border-dashed border-gray-400 rounded-xl overflow-hidden bg-white">
+        <canvas id="signatureCanvas" class="sig-canvas w-full h-44 block"></canvas>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button type="button" onclick="clearSignatureCanvas()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl text-xs">
+          Limpiar Firma
+        </button>
+        <button type="button" onclick="saveSignatureFromModal()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs shadow">
+          Confirmar Firma ✓
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL COMPARTIR ENLACE WHATSAPP ==================== -->
+  <div id="shareLinkModal" class="fixed inset-0 z-50 bg-black/70 hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-4 space-y-3">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-sm font-extrabold text-gray-900">Enviar Acta para Firma en Celular</h3>
+        <button onclick="closeShareModal()" class="p-1 text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-gray-600">Este enlace contiene el acta prellenada con todos los ítems. Al abrirlo en el móvil, el colaborador podrá firmar directamente.</p>
+      <textarea id="generatedShareUrl" rows="3" readonly class="w-full bg-gray-100 border border-gray-300 rounded-xl p-2.5 text-[11px] font-mono text-gray-800"></textarea>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="copyShareUrl()" class="py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold rounded-xl text-xs">
+          Copiar Enlace
+        </button>
+        <a id="whatsappShareBtn" href="#" target="_blank" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs text-center flex items-center justify-center gap-1.5">
+          Abrir WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL VISTA PREVIA PDF OFICIAL SGC ==================== -->
+  <div id="pdfModal" class="fixed inset-0 z-50 bg-black/75 hidden flex-col">
+    <div class="bg-[#2D3136] text-white px-4 py-3 flex items-center justify-between border-b-4 border-[#F5B318]">
+      <h3 class="text-sm font-bold">Documento Oficial SGC · Ingeniería Integral</h3>
+      <div class="flex items-center gap-2">
+        <button onclick="downloadCurrentExcelSGC()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel SGC
+        </button>
+        <button onclick="downloadCurrentPDF()" class="bg-[#F5B318] hover:bg-amber-400 text-[#2D3136] font-extrabold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5">
+          <i data-lucide="download" class="w-4 h-4"></i> PDF
+        </button>
+        <button onclick="closePdfModal()" class="p-1.5 bg-white/10 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto p-3 bg-gray-700">
+      <div id="pdfRenderArea"></div>
+    </div>
+  </div>
+
+  <!-- SINCRONIZACIÓN EN TIEMPO REAL FIREBASE (PC <-> MÓVIL) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'fa-sgc-actas-movil';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let db = null;
+    let currentUser = null;
+
+    async function bootCloud() {
+      if (!firebaseConfig) return;
+      try {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        db = getFirestore(app);
+        if (initialAuthToken) {
+          await signInWithCustomToken(auth, initialAuthToken);
+        } else {
+          await signInAnonymously(auth);
+        }
+        onAuthStateChanged(auth, (user) => {
+          if (!user) return;
+          currentUser = user;
+          const badge = document.getElementById('cloudStatusBadge');
+          if (badge) badge.textContent = '● Sincronizado / Autoguardado activo';
+
+          const syncDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'sgc_state', 'master');
+          onSnapshot(syncDocRef, (snap) => {
+            if (snap.exists() && !window._isPushingCloud) {
+              const remote = snap.data();
+              if (Array.isArray(remote.actas)) window.state.actas = remote.actas;
+              if (Array.isArray(remote.inventario) && remote.inventario.length > 0) window.state.inventario = remote.inventario;
+              if (Array.isArray(remote.personal) && remote.personal.length > 0) window.state.personal = remote.personal;
+              window.saveAllToStorage(true);
+              window.populatePersonalDatalist();
+              window.initDatesAndCounters();
+              window.refreshDashboard();
+            }
+          }, (err) => console.error(err));
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    window.pushStateToCloud = async function() {
+      if (!db || !currentUser) return;
+      window._isPushingCloud = true;
+      try {
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'sgc_state', 'master'), {
+          actas: window.state.actas,
+          inventario: window.state.inventario,
+          personal: window.state.personal,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setTimeout(() => { window._isPushingCloud = false; }, 500);
+      }
+    };
+
+    bootCloud();
+  </script>
+
+<script>
+// ============================================================================
+// 1. LOGOTIPO CORPORATIVO Y BASE DE DATOS UNIFICADA DE PERSONAL (21 PERSONAS)
+// ============================================================================
+const COMPANY_LOGO_SVG = `
+<svg viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg" style="height:36px;width:auto;display:block;">
+  <rect x="6" y="8" width="104" height="104" rx="14" fill="#F5B318"/>
+  <path d="M28 92 V32 H80" fill="none" stroke="#2D3136" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28 54 H74 C86 54 90 60 90 70 V82 C90 90 84 94 74 94 H58 C48 94 44 88 44 80 C44 72 48 68 58 68 H74" fill="none" stroke="#2D3136" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="82" cy="32" r="7" fill="#FFFFFF" stroke="#2D3136" stroke-width="4.5"/>
+  <circle cx="82" cy="32" r="2.5" fill="#F5B318"/>
+  <circle cx="28" cy="54" r="7" fill="#FFFFFF" stroke="#2D3136" stroke-width="4.5"/>
+  <circle cx="28" cy="54" r="2.5" fill="#F5B318"/>
+  <circle cx="28" cy="92" r="7" fill="#FFFFFF" stroke="#2D3136" stroke-width="4.5"/>
+  <circle cx="28" cy="92" r="2.5" fill="#F5B318"/>
+  <circle cx="76" cy="68" r="7" fill="#FFFFFF" stroke="#2D3136" stroke-width="4.5"/>
+  <circle cx="76" cy="68" r="2.5" fill="#F5B318"/>
+  <text x="126" y="52" font-family="'Inter', Arial, sans-serif" font-weight="600" font-size="25" fill="#2D3136" letter-spacing="-0.5">Ingeniería</text>
+  <text x="125" y="96" font-family="'Inter', Arial, sans-serif" font-weight="700" font-size="44" fill="#2D3136" letter-spacing="-1">Integral</text>
+</svg>`;
+
+const DEFAULT_PERSONAL = [
+  {"nombre": "ALEXANDER FUENTES", "identificacion": "72182888"},
+  {"nombre": "CRISTIAN ANDRES VASQUEZ CUADRADO", "identificacion": "1129529960"},
+  {"nombre": "DANIELA MARTINEZ", "identificacion": "1002500827"},
+  {"nombre": "ELVIS CUESTA", "identificacion": "72258911"},
+  {"nombre": "FRANKLIN ALBERTO ARROYO", "identificacion": "72290045"},
+  {"nombre": "JHOAN JOSE CEBALLOS SALCEDO", "identificacion": "1082886533"},
+  {"nombre": "JOHAN YISETH DE LA TORRE MORENO", "identificacion": "32905819"},
+  {"nombre": "JOHNNY PEREZ", "identificacion": "1140872643"},
+  {"nombre": "JORGE LUIS PELAEZ MONTERO", "identificacion": "72289764"},
+  {"nombre": "JOSE NAVARRO", "identificacion": "72248154"},
+  {"nombre": "LYVIS NIETO MARCHENA", "identificacion": "22655631"},
+  {"nombre": "MARIA DURAN", "identificacion": "1143228591"},
+  {"nombre": "MARIANA BRIGANTE", "identificacion": "1042849520"},
+  {"nombre": "MARILUZ BARBOSA", "identificacion": "22584655"},
+  {"nombre": "OCTAVIO ESCORCIA", "identificacion": "72285462"},
+  {"nombre": "OSCAR ANDRES RODRIGUEZ SEVERICHE", "identificacion": "1140828600"},
+  {"nombre": "PATRICIA HERNÁNDEZ", "identificacion": "1045719587"},
+  {"nombre": "ROBERTO BARROS URUETA", "identificacion": "8649779"},
+  {"nombre": "ROBERTO JIMENEZ PACHECO", "identificacion": "1140893486"},
+  {"nombre": "SULAY VANESA SANDOVAL MARTINEZ", "identificacion": "1045672972"},
+  {"nombre": "WILLIAM ENRIQUE RUIZ SANJUAN", "identificacion": "72152090"}
+];
+
+const RAW_INVENTARIO = [
+  ["UNIDAD", "ABRAZADERA OMEGA 1/2\"", 30],
+  ["UNIDAD", "ABRAZADERA OMEGA 1\"", 44],
+  ["UNIDAD", "ABRAZADERA OMEGA 2\" EMT", 7],
+  ["UNIDAD", "ABRAZADERA OMEGA 3/4\"", 50],
+  ["UNIDAD", "ABRAZADERA TIPO U 1 1/2\"", 2],
+  ["UNIDAD", "ABRAZADERA TIPO U 1\"", 5],
+  ["UNIDAD", "ABRAZADERA TIPO U 3/4\"", 43],
+  ["UNIDAD", "ADAPTADOR TERMINAL PVC 1/2\"", 5],
+  ["UNIDAD", "AISLADOR HUEVO", 6],
+  ["UNIDAD", "AISLADOR TIPO CARRERA", 1],
+  ["UNIDAD", "AISLADOR TIPO TENSOR", 2],
+  ["UNIDAD", "ALAMBRE DE AMARRE #18 X KILO", 3],
+  ["UNIDAD", "ALAMBRE DULCE GALVANIZADO #12 X KILO", 5],
+  ["UNIDAD", "ALAMBRE ENCAUCHETADO 2X12 X METRO", 10],
+  ["UNIDAD", "ALAMBRE ENCAUCHETADO 3X10 X METRO", 8],
+  ["UNIDAD", "ALAMBRE ENCAUCHETADO 3X12 X METRO", 15],
+  ["UNIDAD", "ALAMBRE ENCAUCHETADO 3X14 X METRO", 12],
+  ["UNIDAD", "ALAMBRE UTP CAT 6 EXTERIOR X METRO", 80],
+  ["UNIDAD", "AMARRA PLASTICA 30CM X 4.8MM BOLSA X 100", 2],
+  ["METREL", "ANALIZADOR DE ENERGIA TRIFASICO METREL MI2892 POWER", 1],
+  ["UNIDAD", "ARANDELA DE PRESION GALVANIZADA 1/2\"", 40],
+  ["UNIDAD", "ARANDELA DE PRESION GALVANIZADA 3/8\"", 35],
+  ["UNIDAD", "ARANDELA PLANA GALVANIZADA 1/2\"", 50],
+  ["UNIDAD", "ARANDELA PLANA GALVANIZADA 3/8\"", 45],
+  ["UNIDAD", "ARNES DIELECTRICO CERTIFICADO", 3],
+  ["UNIDAD", "BARRA DE COBRE 5/8 X 2.40M", 2],
+  ["ESENSES", "BASE REFRIGERANTE PARA PC", 2],
+  ["UNIDAD", "BORNERA DE CONEXION 12 POLOS", 6],
+  ["UNIDAD", "BREAKER ENCHUFABLE 1X20A", 4],
+  ["UNIDAD", "BREAKER ENCHUFABLE 2X30A", 2],
+  ["UNIDAD", "BREAKER INDUSTRIAL 3X100A", 1],
+  ["UNIDAD", "BREAKER INDUSTRIAL 3X40A", 2],
+  ["UNIDAD", "BREAKER INDUSTRIAL 3X60A", 1],
+  ["UNIDAD", "BROCA DE TUNGSTENO 1/4\"", 4],
+  ["UNIDAD", "BROCA DE TUNGSTENO 3/8\"", 3],
+  ["UNIDAD", "BROCA DE TUNGSTENO 5/16\"", 5],
+  ["UNIDAD", "BROCA METAL HSS 1/4\"", 6],
+  ["UNIDAD", "BROCA METAL HSS 3/16\"", 4],
+  ["UNIDAD", "CABLE COBRE DESNUDO #2 AWG X METRO", 12],
+  ["UNIDAD", "CABLE COBRE DESNUDO #4 AWG X METRO", 15],
+  ["UNIDAD", "CABLE THHN #10 AWG BLANCO X METRO", 60],
+  ["UNIDAD", "CABLE THHN #10 AWG NEGRO X METRO", 55],
+  ["UNIDAD", "CABLE THHN #10 AWG VERDE X METRO", 45],
+  ["UNIDAD", "CABLE THHN #12 AWG BLANCO X METRO", 90],
+  ["UNIDAD", "CABLE THHN #12 AWG NEGRO X METRO", 85],
+  ["UNIDAD", "CABLE THHN #12 AWG ROJO X METRO", 70],
+  ["UNIDAD", "CABLE THHN #12 AWG VERDE X METRO", 75],
+  ["UNIDAD", "CABLE THHN #8 AWG NEGRO X METRO", 30],
+  ["UNIDAD", "CAJA DE PASO METALICA 15X15X10 CM", 3],
+  ["UNIDAD", "CAJA DE PASO METALICA 20X20X10 CM", 2],
+  ["UNIDAD", "CAJA DE PASO PVC 10X10 CM", 6],
+  ["UNIDAD", "CAJA RECTANGULAR GALVANIZADA 2X4", 15],
+  ["UNIDAD", "CAJA OCTOGONAL GALVANIZADA 4X4", 10],
+  ["UNIDAD", "CANALETA PLASTICA 20X12MM CON ADHESIVO X 2M", 12],
+  ["UNIDAD", "CANALETA PLASTICA 40X25MM X 2M", 8],
+  ["UNIDAD", "CASCO DE SEGURIDAD DIELECTRICO TIPO II", 4],
+  ["XIAOMI", "CELULAR REDMI 15C 256GB COLOR NEGRO SN: 67515/66SH00652 IMEI 867754081408381", 1],
+  ["UNIDAD", "CHAZO EXPANSIVO METALICO 1/4\" X 2\"", 40],
+  ["UNIDAD", "CHAZO EXPANSIVO METALICO 3/8\" X 2 1/2\"", 25],
+  ["UNIDAD", "CHAZO PLASTICO 1/4\" BOLSA X 100", 3],
+  ["UNIDAD", "CHAZO PLASTICO 5/16\" BOLSA X 100", 2],
+  ["UNIDAD", "CINTA AISLANTE NEGRA 3M SUPER 33+", 8],
+  ["UNIDAD", "CINTA AUTOFUNDENTE 3M 23", 4],
+  ["UNIDAD", "CINTA DE PELIGRO AMARILLA/NEGRA ROLLO", 2],
+  ["SATA", "CIZALLA MARCA SATA", 1],
+  ["GENIUS", "COMBO TECLADO + MOUSE ALAMBRICO S/N: 35C97860000874", 3],
+  ["UNIDAD", "CONECTOR BIMETALICO PERNO PARTIDO #2", 6],
+  ["UNIDAD", "CONECTOR EMT 1/2\" ZINC", 25],
+  ["UNIDAD", "CONECTOR EMT 3/4\" ZINC", 20],
+  ["UNIDAD", "CONECTOR RJ45 CAT 6 BOLSA X 50", 1],
+  ["UNIDAD", "CURVA EMT 1/2\"", 10],
+  ["UNIDAD", "CURVA EMT 3/4\"", 8],
+  ["UNIDAD", "CURVA PVC 1/2\" ELECTRICA", 15],
+  ["UNIDAD", "CURVA PVC 3/4\" ELECTRICA", 12],
+  ["UNIDAD", "DISCO DE CORTE METAL 4 1/2\"", 15],
+  ["UNIDAD", "DISCO DE CORTE METAL 9\"", 6],
+  ["UNIDAD", "DISCO DE DESBASTE METAL 4 1/2\"", 5],
+  ["HORN", "ESCALERA DE TIJERA DE 6 PELDAÑOS HORN", 2],
+  ["UNIDAD", "ESLINGA DE POSICIONAMIENTO CON ABSORBEDOR", 2],
+  ["UNIDAD", "GAFAS DE SEGURIDAD TRANSPARENTES ANTIEMPAÑANTE", 6],
+  ["UNIDAD", "GUANTES DIELECTRICOS CLASE 0 (1000V)", 2],
+  ["UNIDAD", "GUANTES DE VAQUETA REFORZADOS", 5],
+  ["UNIDAD", "INTERRUPTOR SENCILLO INCRUSTAR BLANCO", 8],
+  ["ELITE", "MAQUINA DE SOLDADURA MARCA ELITE", 1],
+  ["HP", "MOUSE ALÁMBRICO MODEL HSA-016M", 4],
+  ["UNI-T", "PINZA AMPERIMETRICA UT281C", 2],
+  ["BOSCH", "PULIDORA 9\" MARCA BOSCH", 2],
+  ["UNIDAD", "REFLECTOR LED 100W LUZ BLANCA EXTERIOR", 3],
+  ["UNIDAD", "REFLECTOR LED 50W LUZ BLANCA EXTERIOR", 4],
+  ["BAUKER", "SIERRA CIRCULAR 7 1/4 BAUKER", 1],
+  ["UNIDAD", "SOLDADURA 6013 1/8\" X KILO", 5],
+  ["DEWALT", "TALADRO INALAMBRICO DEWALT 20V", 2],
+  ["MAKITA", "TALADRO PERCUTOR MAKITA", 2],
+  ["SOFAMEL", "TAPETE DIELECTRICO SOFAMEL", 1],
+  ["UNIDAD", "TERMINAL DE COMPRESION COBRE #2 AWG", 10],
+  ["UNIDAD", "TERMINAL DE COMPRESION COBRE #4 AWG", 12],
+  ["UNIDAD", "TOMACORRIENTE DOBLE CON POLO A TIERRA", 10],
+  ["UNIDAD", "TOMACORRIENTE GFCI 15A BLANCO", 4],
+  ["UNIDAD", "TORNILLO DRYWALL 6X1\" PUNTA BROCA X 100", 3],
+  ["UNIDAD", "TORNILLO HEXAGONAL GALVANIZADO 1/2\" X 2\"", 20],
+  ["UNIDAD", "TUBO CONDUIT EMT 1/2\" X 3M", 12],
+  ["UNIDAD", "TUBO CONDUIT EMT 3/4\" X 3M", 10],
+  ["UNIDAD", "TUBO CONDUIT PVC 1/2\" X 3M", 15],
+  ["UNIDAD", "UNION EMT 1/2\" ZINC", 20],
+  ["UNIDAD", "UNION EMT 3/4\" ZINC", 18],
+  ["UNIDAD", "UNION PVC 1/2\" ELECTRICA", 20],
+  ["UNIDAD", "UNION PVC 3/4\" ELECTRICA", 16],
+  ["UNIDAD", "VARILLA ROSCADA GALVANIZADA 3/8\" X 3M", 6],
+  ["UNIDAD", "VARILLA ROSCADA GALVANIZADA 1/2\" X 3M", 4],
+  ["UNIDAD", "VOLTIMETRO DIGITAL DE TABLERO", 2],
+  ["UNIDAD", "ZAPATA TERMINAL DE COBRE #1/0", 8],
+  ["UNIDAD", "ZAPATA TERMINAL DE COBRE #2/0", 6]
+];
+
+// ============================================================================
+// 2. ESTADO Y PERSISTENCIA
+// ============================================================================
+const STORAGE_KEYS = {
+  PERSONAL: 'ii_sgc_personal_v9',
+  INVENTARIO: 'ii_sgc_inventario_v9',
+  ACTAS: 'ii_sgc_actas_v9',
+  DRIVE: 'ii_sgc_drive_v9'
+};
+
+window.state = {
+  personal: [],
+  inventario: [],
+  actas: [],
+  drive: { scriptUrl: '', folderId: '', autoSync: true },
+  entItems: [],
+  devItems: [],
+  entPhotos: [],
+  devPhotos: [],
+  entSigs: { autorizado: '', entregado: '', recibido: '' },
+  devSigs: { autorizado: '', entregado: '', recibido: '' },
+  actasFilter: 'ALL',
+  currentModalMode: 'ent',
+  currentSigCtx: { mode: 'ent', role: 'recibido' },
+  currentPreviewActaId: null,
+  remotePayload: null
+};
+
+function loadInitialData() {
+  try {
+    const p = localStorage.getItem(STORAGE_KEYS.PERSONAL);
+    window.state.personal = p ? JSON.parse(p) : [...DEFAULT_PERSONAL];
+  } catch (e) {
+    window.state.personal = [...DEFAULT_PERSONAL];
+  }
+
+  try {
+    const inv = localStorage.getItem(STORAGE_KEYS.INVENTARIO);
+    if (inv) {
+      window.state.inventario = JSON.parse(inv);
+    } else {
+      window.state.inventario = RAW_INVENTARIO.map((row, idx) => ({
+        id: 'inv-' + (idx + 1),
+        codigo: `INV-${String(idx + 1).padStart(3, '0')}`,
+        marca: String(row[0] || 'UNIDAD'),
+        nombre: String(row[1] || ''),
+        stock: Number(row[2]) || 0,
+        estado: 'Bueno'
+      }));
+    }
+  } catch (e) {
+    window.state.inventario = RAW_INVENTARIO.map((row, idx) => ({
+      id: 'inv-' + (idx + 1),
+      codigo: `INV-${String(idx + 1).padStart(3, '0')}`,
+      marca: String(row[0] || 'UNIDAD'),
+      nombre: String(row[1] || ''),
+      stock: Number(row[2]) || 0,
+      estado: 'Bueno'
+    }));
+  }
+
+  try {
+    const a = localStorage.getItem(STORAGE_KEYS.ACTAS);
+    window.state.actas = a ? JSON.parse(a) : [];
+  } catch (e) {
+    window.state.actas = [];
+  }
+
+  try {
+    const d = localStorage.getItem(STORAGE_KEYS.DRIVE);
+    if (d) window.state.drive = JSON.parse(d);
+  } catch (e) {}
+}
+
+window.saveAllToStorage = function(skipCloud) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PERSONAL, JSON.stringify(window.state.personal));
+    localStorage.setItem(STORAGE_KEYS.INVENTARIO, JSON.stringify(window.state.inventario));
+    localStorage.setItem(STORAGE_KEYS.ACTAS, JSON.stringify(window.state.actas));
+    localStorage.setItem(STORAGE_KEYS.DRIVE, JSON.stringify(window.state.drive));
+  } catch (e) {
+    console.warn('Error guardando localmente:', e);
+  }
+  if (!skipCloud && typeof window.pushStateToCloud === 'function') {
+    window.pushStateToCloud();
+  }
+};
+
+// ============================================================================
+// 3. UTILIDADES UI Y NAVEGACIÓN
+// ============================================================================
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const colors = {
+    success: 'bg-emerald-600 text-white border-emerald-700',
+    warning: 'bg-amber-500 text-[#2D3136] border-amber-600',
+    error: 'bg-red-600 text-white border-red-700'
+  };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs font-extrabold transition transform duration-200 ${colors[type] || colors.success}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 250);
+  }, 3200);
+}
+
+const TAB_TITLES = {
+  inicio: 'Panel Principal e Historial de Cumplidos',
+  entrega: 'Acta de Entrega de Equipos y Herramientas (FM-AF-011)',
+  devolucion: 'Acta de Devolución de Equipos y Herramientas (FM-AF-016)',
+  inventario: 'Inventario de Materiales y Equipos',
+  datos: 'Directorio de Personal y Configuración Google Drive'
+};
+
+window.switchTab = function(tabName) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  const target = document.getElementById('tab-' + tabName);
+  if (target) target.classList.remove('hidden');
+
+  document.querySelectorAll('.side-btn').forEach(btn => {
+    btn.className = 'side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition';
+  });
+  const activeSide = document.getElementById('side-' + tabName);
+  if (activeSide) {
+    activeSide.className = 'side-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold bg-[#F5B318] text-[#2D3136] shadow-sm transition';
+  }
+
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.className = 'nav-btn flex flex-col items-center justify-center gap-0.5 text-gray-400 font-medium';
+  });
+  const activeNav = document.getElementById('nav-' + tabName);
+  if (activeNav) {
+    activeNav.className = 'nav-btn flex flex-col items-center justify-center gap-0.5 text-[#2D3136] font-extrabold';
+  }
+
+  const pageTitle = document.getElementById('desktopPageTitle');
+  if (pageTitle) pageTitle.textContent = TAB_TITLES[tabName] || '';
+
+  if (tabName === 'inicio') refreshDashboard();
+  if (tabName === 'inventario') renderInventoryList();
+  if (tabName === 'datos') renderPersonalDirectory();
+  if (tabName === 'devolucion') populateSalidaSelector();
+  if (window.lucide) lucide.createIcons();
+};
+
+window.toggleSignOnlyMode = function(enable) {
+  const banner = document.getElementById('signOnlyBanner');
+  const exitBtn = document.getElementById('exitSignOnlyBtn');
+  const sidebar = document.getElementById('desktopSidebar');
+  const bottomNav = document.getElementById('bottomNav');
+  if (enable) {
+    banner.classList.remove('hidden');
+    exitBtn.classList.remove('hidden');
+    if (sidebar) sidebar.classList.add('lg:hidden');
+    if (bottomNav) bottomNav.classList.add('hidden');
+    showToast('Modo Solo Firma activado para entrega al colaborador', 'warning');
+  } else {
+    banner.classList.add('hidden');
+    exitBtn.classList.add('hidden');
+    if (sidebar) sidebar.classList.remove('lg:hidden');
+    if (bottomNav) bottomNav.classList.remove('hidden');
+  }
+};
+
+// ============================================================================
+// 4. PERSONAL Y FECHAS / CONSECUTIVOS
+// ============================================================================
+window.populatePersonalDatalist = function() {
+  const dl = document.getElementById('personalDatalist');
+  if (!dl) return;
+  dl.innerHTML = window.state.personal
+    .map(p => `<option value="${p.nombre}">${p.identificacion}</option>`)
+    .join('');
+  const badge = document.getElementById('personalCountBadge');
+  if (badge) badge.textContent = window.state.personal.length;
+};
+
+window.onSelectColaborador = function(prefix) {
+  const nameInput = document.getElementById(prefix + 'Colaborador');
+  const cedInput = document.getElementById(prefix + 'Cedula');
+  if (!nameInput || !cedInput) return;
+  const val = nameInput.value.trim().toUpperCase();
+  const found = window.state.personal.find(p => p.nombre.toUpperCase() === val);
+  if (found) {
+    cedInput.value = found.identificacion;
+  }
+  if (prefix === 'ent') {
+    const lbl = document.getElementById('entRecibidoAutoLabel');
+    if (lbl) lbl.textContent = nameInput.value.trim() || 'Colaborador seleccionado';
+  }
+};
+
+window.initDatesAndCounters = function() {
+  const today = new Date().toISOString().split('T')[0];
+  const entF = document.getElementById('entFecha');
+  const devF = document.getElementById('devFecha');
+  if (entF && !entF.value) entF.value = today;
+  if (devF && !devF.value) devF.value = today;
+
+  const entregas = window.state.actas.filter(a => a.tipo === 'entrega');
+  const devoluciones = window.state.actas.filter(a => a.tipo === 'devolucion');
+  const maxEnt = entregas.reduce((m, a) => Math.max(m, Number(a.numero) || 0), 0);
+  const maxDev = devoluciones.reduce((m, a) => Math.max(m, Number(a.numero) || 0), 0);
+
+  const entN = document.getElementById('entNumero');
+  const devN = document.getElementById('devNumero');
+  if (entN) entN.value = maxEnt + 1;
+  if (devN) devN.value = maxDev + 1;
+};
+
+// ============================================================================
+// 5. GESTIÓN DE ÍTEMS Y FOTOS EN ACTAS
+// ============================================================================
+window.openItemModal = function(mode) {
+  window.state.currentModalMode = mode;
+  document.getElementById('modalInvSearch').value = '';
+  document.getElementById('modalItemQty').value = 1;
+  document.getElementById('modalItemMarca').value = '';
+  document.getElementById('modalItemDesc').value = '';
+  document.getElementById('modalItemSerial').value = '';
+  document.getElementById('modalItemEstado').value = 'BUENO';
+  filterModalCatalog();
+  const modal = document.getElementById('itemModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeItemModal = function() {
+  const modal = document.getElementById('itemModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.filterModalCatalog = function() {
+  const q = document.getElementById('modalInvSearch').value.trim().toLowerCase();
+  const box = document.getElementById('modalCatalogResults');
+  const list = window.state.inventario.filter(it =>
+    !q ||
+    it.nombre.toLowerCase().includes(q) ||
+    it.marca.toLowerCase().includes(q) ||
+    it.codigo.toLowerCase().includes(q)
+  ).slice(0, 30);
+
+  if (list.length === 0) {
+    box.innerHTML = `<div class="p-3 text-xs text-gray-400 text-center">No hay coincidencias en inventario. Puedes digitarlo manualmente abajo.</div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(it => `
+    <button type="button" onclick="selectCatalogItemForModal('${it.id}')" class="w-full text-left px-3 py-2 hover:bg-amber-50 flex items-center justify-between gap-2 transition">
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-gray-900 truncate">${it.nombre}</p>
+        <p class="text-[10px] text-gray-500">${it.codigo} · ${it.marca}</p>
+      </div>
+      <span class="shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full ${it.stock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'}">
+        Stock: ${it.stock}
+      </span>
+    </button>
+  `).join('');
+};
+
+window.selectCatalogItemForModal = function(id) {
+  const it = window.state.inventario.find(x => x.id === id);
+  if (!it) return;
+  document.getElementById('modalItemMarca').value = it.marca;
+  document.getElementById('modalItemDesc').value = it.nombre;
+  document.getElementById('modalItemQty').value = 1;
+  document.getElementById('modalItemEstado').value = (it.estado || 'BUENO').toUpperCase();
+  document.getElementById('modalItemDesc').dataset.invId = it.id;
+};
+
+window.confirmAddItem = function() {
+  const qty = parseFloat(document.getElementById('modalItemQty').value) || 0;
+  const marca = document.getElementById('modalItemMarca').value.trim().toUpperCase() || 'UNIDAD';
+  const descBase = document.getElementById('modalItemDesc').value.trim().toUpperCase();
+  const serial = document.getElementById('modalItemSerial').value.trim().toUpperCase();
+  const estado = document.getElementById('modalItemEstado').value;
+  const saveToCat = document.getElementById('modalSaveToCatalogCheck').checked;
+  const invId = document.getElementById('modalItemDesc').dataset.invId || '';
+
+  if (!descBase || qty <= 0) {
+    showToast('Ingresa una descripción y cantidad válida', 'warning');
+    return;
+  }
+
+  const descripcion = serial ? `${descBase} (${serial})` : descBase;
+  const mode = window.state.currentModalMode;
+  const targetArr = mode === 'ent' ? window.state.entItems : window.state.devItems;
+
+  targetArr.push({
+    id: 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    invId,
+    cantidad: qty,
+    marca,
+    descripcion,
+    estado
+  });
+
+  if (saveToCat && !invId) {
+    const exists = window.state.inventario.find(x => x.nombre.toUpperCase() === descBase);
+    if (!exists) {
+      window.state.inventario.unshift({
+        id: 'inv-' + Date.now(),
+        codigo: 'INV-' + String(window.state.inventario.length + 1).padStart(3, '0'),
+        marca,
+        nombre: descBase,
+        stock: mode === 'dev' ? qty : 0,
+        estado: 'Bueno'
+      });
+      saveAllToStorage();
+    }
+  }
+
+  delete document.getElementById('modalItemDesc').dataset.invId;
+  renderActaItems(mode);
+  closeItemModal();
+  showToast('Elemento agregado a la tabla');
+};
+
+window.removeActaItem = function(mode, idx) {
+  const arr = mode === 'ent' ? window.state.entItems : window.state.devItems;
+  arr.splice(idx, 1);
+  renderActaItems(mode);
+};
+
+window.updateDevItemField = function(idx, field, val) {
+  if (!window.state.devItems[idx]) return;
+  window.state.devItems[idx][field] = field === 'cantidad' ? (parseFloat(val) || 0) : val;
+};
+
+function renderActaItems(mode) {
+  const arr = mode === 'ent' ? window.state.entItems : window.state.devItems;
+  const container = document.getElementById(mode + 'ItemsList');
+  const counter = document.getElementById(mode + 'ItemsCount');
+  if (counter) counter.textContent = arr.length;
+  if (!container) return;
+
+  if (arr.length === 0) {
+    container.innerHTML = `<div class="border border-dashed border-gray-300 rounded-xl p-4 text-center text-xs text-gray-400">No hay elementos agregados todavía. Pulsa <b>"+ Agregar Elemento"</b>.</div>`;
+    return;
+  }
+
+  container.innerHTML = arr.map((it, idx) => `
+    <div class="border border-gray-200 rounded-xl p-3 bg-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="bg-[#2D3136] text-[#F5B318] text-[10px] font-extrabold px-2 py-0.5 rounded">Ítem #${idx + 1}</span>
+          <span class="text-[11px] font-bold text-gray-500">${it.marca}</span>
+        </div>
+        <p class="text-xs font-extrabold text-gray-900 mt-1">${it.descripcion}</p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        ${mode === 'dev' ? `
+          <input type="number" min="0" step="any" value="${it.cantidad}" onchange="updateDevItemField(${idx}, 'cantidad', this.value)" class="w-16 bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs font-bold text-center" title="Cantidad devuelta" />
+          <select onchange="updateDevItemField(${idx}, 'estado', this.value)" class="bg-white border border-gray-300 rounded-lg px-2 py-1 text-[11px] font-bold">
+            <option value="BUENO" ${it.estado === 'BUENO' ? 'selected' : ''}>BUENO</option>
+            <option value="USADO COMO NUEVO" ${it.estado === 'USADO COMO NUEVO' ? 'selected' : ''}>USADO COMO NUEVO</option>
+            <option value="REGULAR" ${it.estado === 'REGULAR' ? 'selected' : ''}>REGULAR</option>
+            <option value="DAÑADO" ${it.estado === 'DAÑADO' ? 'selected' : ''}>DAÑADO</option>
+          </select>
+        ` : `
+          <span class="bg-amber-100 text-amber-900 text-xs font-extrabold px-2.5 py-1 rounded-lg">Cant: ${it.cantidad}</span>
+          <span class="bg-white border border-gray-200 text-gray-700 text-[10px] font-bold px-2 py-1 rounded-lg">${it.estado}</span>
+        `}
+        <button type="button" onclick="removeActaItem('${mode}', ${idx})" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+window.handlePhotoCapture = function(event, mode) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  const targetArr = mode === 'ent' ? window.state.entPhotos : window.state.devPhotos;
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const maxW = 800;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        targetArr.push(canvas.toDataURL('image/jpeg', 0.72));
+        renderPhotosGrid(mode);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+};
+
+window.removePhoto = function(mode, idx) {
+  const targetArr = mode === 'ent' ? window.state.entPhotos : window.state.devPhotos;
+  targetArr.splice(idx, 1);
+  renderPhotosGrid(mode);
+};
+
+function renderPhotosGrid(mode) {
+  const arr = mode === 'ent' ? window.state.entPhotos : window.state.devPhotos;
+  const grid = document.getElementById(mode + 'PhotosGrid');
+  if (!grid) return;
+  if (arr.length === 0) {
+    grid.innerHTML = `<p class="col-span-full text-[11px] text-gray-400">Sin fotografías adjuntas.</p>`;
+    return;
+  }
+  grid.innerHTML = arr.map((src, idx) => `
+    <div class="relative aspect-square rounded-xl overflow-hidden border border-gray-300 bg-white group">
+      <img src="${src}" class="w-full h-full object-cover" />
+      <button type="button" onclick="removePhoto('${mode}', ${idx})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 shadow">
+        <i data-lucide="x" class="w-3 h-3"></i>
+      </button>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+// ============================================================================
+// 6. FIRMAS DIGITALES TÁCTILES (CANVAS)
+// ============================================================================
+let sigCanvas, sigCtx, isDrawing = false;
+
+function setupCanvasDrawing(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = (rect.width || 340) * ratio;
+  canvas.height = (rect.height || 176) * ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#111827';
+
+  let drawing = false;
+  const getPos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+  };
+
+  const start = (e) => {
+    e.preventDefault();
+    drawing = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  };
+  const move = (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  };
+  const end = () => { drawing = false; };
+
+  canvas.onmousedown = start;
+  canvas.onmousemove = move;
+  window.addEventListener('mouseup', end);
+  canvas.ontouchstart = start;
+  canvas.ontouchmove = move;
+  canvas.ontouchend = end;
+
+  return { canvas, ctx };
+}
+
+window.openSignatureModal = function(mode, role, title) {
+  window.state.currentSigCtx = { mode, role };
+  document.getElementById('sigModalTitle').textContent = 'Firma: ' + title;
+  const modal = document.getElementById('signatureModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  setTimeout(() => {
+    const res = setupCanvasDrawing('signatureCanvas');
+    if (res) {
+      sigCanvas = res.canvas;
+      sigCtx = res.ctx;
+    }
+  }, 50);
+};
+
+window.closeSignatureModal = function() {
+  const modal = document.getElementById('signatureModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.clearSignatureCanvas = function() {
+  if (!sigCanvas || !sigCtx) return;
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+};
+
+window.saveSignatureFromModal = function() {
+  if (!sigCanvas) return;
+  const dataUrl = sigCanvas.toDataURL('image/png');
+  const { mode, role } = window.state.currentSigCtx;
+  if (mode === 'ent') {
+    window.state.entSigs[role] = dataUrl;
+  } else {
+    window.state.devSigs[role] = dataUrl;
+  }
+  updateSignaturePreview(mode, role, dataUrl);
+  closeSignatureModal();
+  showToast('Firma capturada correctamente');
+};
+
+function updateSignaturePreview(mode, role, dataUrl) {
+  const box = document.getElementById(`preview-${mode}-${role}`);
+  const badge = document.getElementById(`badge-${mode}-${role}`);
+  if (box) {
+    box.innerHTML = dataUrl ? `<img src="${dataUrl}" class="max-h-full max-w-full object-contain" />` : 'Sin firma';
+  }
+  if (badge) {
+    if (dataUrl) {
+      badge.textContent = 'Firmado ✓';
+      badge.className = 'text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded font-bold';
+    } else {
+      badge.textContent = role === 'autorizado' ? 'Opcional' : 'Pendiente';
+      badge.className = 'text-[10px] text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-bold';
+    }
+  }
+}
+
+// ============================================================================
+// 7. VINCULACIÓN DE DEVOLUCIONES Y GUARDADO DE ACTAS SGC
+// ============================================================================
+window.populateSalidaSelector = function() {
+  const sel = document.getElementById('devLinkSalida');
+  if (!sel) return;
+  const abiertas = window.state.actas.filter(a => a.tipo === 'entrega' && a.status !== 'CUMPLIDO');
+  sel.innerHTML = `<option value="">-- Seleccionar Salida # pendiente o registrar devolución manual --</option>` +
+    abiertas.map(a => `<option value="${a.id}">Salida #${a.numero} · ${a.colaborador} (${a.fecha})</option>`).join('');
+};
+
+window.onLinkSalidaChange = function() {
+  const id = document.getElementById('devLinkSalida').value;
+  if (!id) return;
+  const entrega = window.state.actas.find(a => a.id === id);
+  if (!entrega) return;
+
+  document.getElementById('devColaborador').value = entrega.colaborador;
+  document.getElementById('devCedula').value = entrega.cedula;
+  document.getElementById('devCiudad').value = entrega.ciudad || 'Barranquilla';
+  document.getElementById('devNumero').value = entrega.numero;
+
+  const prevDevs = window.state.actas.filter(a => a.tipo === 'devolucion' && a.linkedSalidaId === entrega.id);
+  const pendientes = [];
+
+  entrega.items.forEach(item => {
+    const yaDevuelto = prevDevs.reduce((sum, d) => {
+      const match = d.items.find(di => di.descripcion === item.descripcion);
+      return sum + (match ? Number(match.cantidad) : 0);
+    }, 0);
+    const restante = Math.max(0, Number(item.cantidad) - yaDevuelto);
+    if (restante > 0) {
+      pendientes.push({
+        id: 'devrow-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        invId: item.invId || '',
+        cantidad: restante,
+        marca: item.marca,
+        descripcion: item.descripcion,
+        estado: 'BUENO'
+      });
+    }
+  });
+
+  window.state.devItems = pendientes;
+  renderActaItems('dev');
+  showToast(`Ítems pendientes de Salida #${entrega.numero} cargados`);
+};
+
+window.saveActa = function(tipo) {
+  const isEnt = tipo === 'entrega';
+  const p = isEnt ? 'ent' : 'dev';
+  const colaborador = document.getElementById(p + 'Colaborador').value.trim().toUpperCase();
+  const cedula = document.getElementById(p + 'Cedula').value.trim();
+  const fecha = document.getElementById(p + 'Fecha').value;
+  const ciudad = document.getElementById(p + 'Ciudad').value.trim() || 'Barranquilla';
+  const numero = Number(document.getElementById(p + 'Numero').value) || 1;
+  const nota = document.getElementById(p + 'Nota').value.trim();
+  const items = isEnt ? [...window.state.entItems] : [...window.state.devItems];
+  const photos = isEnt ? [...window.state.entPhotos] : [...window.state.devPhotos];
+  const sigs = isEnt ? { ...window.state.entSigs } : { ...window.state.devSigs };
+
+  if (!colaborador || !cedula) {
+    showToast('Completa el nombre y cédula del colaborador', 'warning');
+    return;
+  }
+  if (items.length === 0) {
+    showToast('Agrega al menos un equipo o material a la tabla', 'warning');
+    return;
+  }
+
+  const linkedSalidaId = !isEnt ? (document.getElementById('devLinkSalida').value || '') : '';
+
+  const actaObj = {
+    id: 'acta-' + Date.now(),
+    tipo,
+    codigoSGC: isEnt ? 'FM-AF-011' : 'FM-AF-016',
+    versionSGC: isEnt ? '03' : '02',
+    numero,
+    fecha,
+    ciudad,
+    colaborador,
+    cedula,
+    items,
+    nota,
+    photos,
+    sigs,
+    autorizadoNombre: document.getElementById(p + 'AutorizadoNombre').value.trim(),
+    entregadoNombre: isEnt ? document.getElementById('entEntregadoNombre').value.trim() : colaborador,
+    recibidoNombre: isEnt ? colaborador : document.getElementById('devRecibidoNombre').value.trim(),
+    linkedSalidaId,
+    status: isEnt ? 'PENDING' : 'CUMPLIDO',
+    createdAt: new Date().toISOString()
+  };
+
+  // Actualizar inventario automáticamente
+  items.forEach(item => {
+    const invItem = window.state.inventario.find(x =>
+      (item.invId && x.id === item.invId) ||
+      item.descripcion.toUpperCase().startsWith(x.nombre.toUpperCase())
+    );
+    if (invItem) {
+      if (isEnt) {
+        invItem.stock = Math.max(0, Number(invItem.stock) - Number(item.cantidad));
+      } else {
+        invItem.stock = Number(invItem.stock) + Number(item.cantidad);
+      }
+    }
+  });
+
+  window.state.actas.unshift(actaObj);
+
+  // Verificar si una entrega vinculada pasa a PARCIAL o CUMPLIDO
+  if (!isEnt && linkedSalidaId) {
+    const parent = window.state.actas.find(a => a.id === linkedSalidaId);
+    if (parent) {
+      const allDevs = window.state.actas.filter(a => a.tipo === 'devolucion' && a.linkedSalidaId === parent.id);
+      let allReturned = true;
+      parent.items.forEach(pItem => {
+        const totalDev = allDevs.reduce((sum, d) => {
+          const match = d.items.find(di => di.descripcion === pItem.descripcion);
+          return sum + (match ? Number(match.cantidad) : 0);
+        }, 0);
+        if (totalDev < Number(pItem.cantidad)) allReturned = false;
+      });
+      parent.status = allReturned ? 'CUMPLIDO' : 'PARTIAL';
+    }
+  }
+
+  saveAllToStorage();
+  if (window.state.drive.autoSync && window.state.drive.scriptUrl) {
+    syncSingleActaToDrive(actaObj);
+  }
+
+  // Limpiar formulario
+  if (isEnt) {
+    window.state.entItems = [];
+    window.state.entPhotos = [];
+    window.state.entSigs = { autorizado: '', entregado: '', recibido: '' };
+    document.getElementById('entColaborador').value = '';
+    document.getElementById('entCedula').value = '';
+    document.getElementById('entNota').value = '';
+    ['autorizado', 'entregado', 'recibido'].forEach(r => updateSignaturePreview('ent', r, ''));
+    renderActaItems('ent');
+    renderPhotosGrid('ent');
+  } else {
+    window.state.devItems = [];
+    window.state.devPhotos = [];
+    window.state.devSigs = { autorizado: '', entregado: '', recibido: '' };
+    document.getElementById('devLinkSalida').value = '';
+    document.getElementById('devColaborador').value = '';
+    document.getElementById('devCedula').value = '';
+    ['autorizado', 'entregado', 'recibido'].forEach(r => updateSignaturePreview('dev', r, ''));
+    renderActaItems('dev');
+    renderPhotosGrid('dev');
+  }
+
+  initDatesAndCounters();
+  showToast(`Acta ${actaObj.codigoSGC} #${actaObj.numero} guardada y sincronizada`);
+  switchTab('inicio');
+};
+
+// ============================================================================
+// 8. PANEL PRINCIPAL, HISTORIAL Y EXPEDIENTE DIGITAL
+// ============================================================================
+window.setActasFilter = function(f) {
+  window.state.actasFilter = f;
+  document.querySelectorAll('.af-btn').forEach(btn => {
+    const active = btn.dataset.af === f;
+    btn.className = active
+      ? 'af-btn px-3 py-2 rounded-xl bg-[#2D3136] text-white'
+      : 'af-btn px-3 py-2 rounded-xl bg-gray-100 text-gray-700 border border-gray-200';
+  });
+  renderActasList();
+};
+
+window.refreshDashboard = function() {
+  const entregas = window.state.actas.filter(a => a.tipo === 'entrega');
+  const pendientes = entregas.filter(a => a.status === 'PENDING' || a.status === 'PARTIAL').length;
+  const cumplidos = window.state.actas.filter(a => a.status === 'CUMPLIDO').length;
+  const stockBajo = window.state.inventario.filter(i => Number(i.stock) <= 2).length;
+
+  document.getElementById('kpiEntregas').textContent = entregas.length;
+  document.getElementById('kpiPendientes').textContent = pendientes;
+  document.getElementById('kpiCumplidos').textContent = cumplidos;
+  document.getElementById('kpiStockBajo').textContent = stockBajo;
+  renderActasList();
+};
+
+window.renderActasList = function() {
+  const container = document.getElementById('actasListContainer');
+  if (!container) return;
+  const q = (document.getElementById('searchActasInput')?.value || '').trim().toLowerCase();
+  const filter = window.state.actasFilter;
+
+  const filtered = window.state.actas.filter(a => {
+    if (filter !== 'ALL' && a.status !== filter) return false;
+    if (!q) return true;
+    return (
+      a.colaborador.toLowerCase().includes(q) ||
+      String(a.cedula).includes(q) ||
+      String(a.numero).includes(q) ||
+      a.codigoSGC.toLowerCase().includes(q) ||
+      a.items.some(it => it.descripcion.toLowerCase().includes(q))
+    );
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="col-span-full py-10 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-2xl">No hay registros de actas que coincidan con el filtro actual.</div>`;
+    return;
+  }
+
+  const badges = {
+    PENDING: { label: 'Pendiente Devolución', cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+    PARTIAL: { label: 'Devolución Parcial', cls: 'bg-sky-100 text-sky-800 border-sky-300' },
+    CUMPLIDO: { label: 'Cumplido ✓', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+  };
+
+  container.innerHTML = filtered.map(a => {
+    const st = badges[a.status] || badges.PENDING;
+    const isEnt = a.tipo === 'entrega';
+    return `
+      <div onclick="openExpedienteModal('${a.id}')" class="cursor-pointer bg-white hover:bg-amber-50/40 border border-gray-200 hover:border-[#F5B318] rounded-2xl p-3.5 shadow-sm transition flex flex-col justify-between gap-2.5">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#2D3136] text-[#F5B318]">${a.codigoSGC}</span>
+              <span class="text-xs font-extrabold text-gray-900">${isEnt ? 'Salida' : 'Devolución'} #${a.numero}</span>
+            </div>
+            <h4 class="text-sm font-extrabold text-gray-900 mt-1">${a.colaborador}</h4>
+            <p class="text-[11px] text-gray-500">CC: ${a.cedula} · ${a.fecha}</p>
+          </div>
+          <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${st.cls} shrink-0">${st.label}</span>
+        </div>
+        <div class="text-[11px] text-gray-600 bg-gray-50 rounded-xl p-2 border border-gray-100">
+          <b>${a.items.length} ítem(s):</b> ${a.items.map(i => `${i.cantidad}x ${i.descripcion}`).join(', ').slice(0, 95)}...
+        </div>
+      </div>
+    `;
+  }).join('');
+};
+
+window.openExpedienteModal = function(id) {
+  const acta = window.state.actas.find(a => a.id === id);
+  if (!acta) return;
+  window.state.currentPreviewActaId = acta.id;
+
+  document.getElementById('expModalSubtitle').textContent = `${acta.codigoSGC} · Versión ${acta.versionSGC}`;
+  document.getElementById('expModalTitle').textContent = `${acta.tipo === 'entrega' ? 'Salida' : 'Devolución'} #${acta.numero} — ${acta.colaborador}`;
+
+  const body = document.getElementById('expedienteBody');
+  body.innerHTML = `
+    <div class="bg-white p-3.5 rounded-xl border border-gray-200 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+      <div><span class="text-gray-400 block text-[10px]">Colaborador</span><b>${acta.colaborador}</b></div>
+      <div><span class="text-gray-400 block text-[10px]">Cédula</span><b>${acta.cedula}</b></div>
+      <div><span class="text-gray-400 block text-[10px]">Fecha / Ciudad</span><b>${acta.fecha} · ${acta.ciudad}</b></div>
+      <div><span class="text-gray-400 block text-[10px]">Estado</span><b>${acta.status}</b></div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-gray-100 font-bold">
+          <tr><th class="p-2">Ítem</th><th class="p-2">Cant.</th><th class="p-2">Marca</th><th class="p-2">Descripción</th><th class="p-2">Estado</th></tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          ${acta.items.map((it, i) => `
+            <tr>
+              <td class="p-2">${i + 1}</td>
+              <td class="p-2 font-bold">${it.cantidad}</td>
+              <td class="p-2">${it.marca}</td>
+              <td class="p-2">${it.descripcion}</td>
+              <td class="p-2">${it.estado}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${acta.photos && acta.photos.length ? `
+      <div class="bg-white p-3 rounded-xl border border-gray-200 space-y-2">
+        <h4 class="text-xs font-extrabold text-gray-800">Evidencia Fotográfica (${acta.photos.length})</h4>
+        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          ${acta.photos.map(src => `<img src="${src}" class="w-full h-24 object-cover rounded-lg border" />`).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="grid grid-cols-3 gap-2">
+      ${['autorizado', 'entregado', 'recibido'].map(r => `
+        <div class="bg-white p-2 rounded-xl border border-gray-200 text-center">
+          <span class="text-[10px] font-bold uppercase text-gray-500 block">${r}</span>
+          <div class="h-14 flex items-center justify-center my-1">
+            ${acta.sigs && acta.sigs[r] ? `<img src="${acta.sigs[r]}" class="max-h-14 object-contain" />` : `<span class="text-[10px] text-gray-300">Sin firma</span>`}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  document.getElementById('expedienteFooter').innerHTML = `
+    <button type="button" onclick="openOfficialPdfPreview('${acta.id}')" class="bg-[#2D3136] text-[#F5B318] font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+      <i data-lucide="file-text" class="w-4 h-4"></i> Ver Formato Oficial SGC / PDF
+    </button>
+    <button type="button" onclick="downloadActaExcelSGC('${acta.id}')" class="bg-emerald-600 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+      <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Descargar Excel SGC
+    </button>
+  `;
+
+  const modal = document.getElementById('expedienteModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  if (window.lucide) lucide.createIcons();
+};
+
+window.closeExpedienteModal = function() {
+  const modal = document.getElementById('expedienteModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+// ============================================================================
+// 9. FORMATO OFICIAL SGC (PDF Y EXCEL INDIVIDUAL)
+// ============================================================================
+function buildSgcHtmlSheet(acta) {
+  const isEnt = acta.tipo === 'entrega';
+  const titulo = isEnt
+    ? 'ACTA DE ENTREGA DE EQUIPOS Y HERRAMIENTAS'
+    : 'ACTA DE DEVOLUCION DE EQUIPOS Y HERRAMIENTAS';
+  const verbo = isEnt
+    ? 'le fueron entregados los siguientes elementos relacionados:'
+    : 'devolvió los siguientes elementos relacionados:';
+
+  const rowsHtml = [];
+  const totalRows = Math.max(12, acta.items.length);
+  for (let i = 0; i < totalRows; i++) {
+    const it = acta.items[i];
+    rowsHtml.push(`
+      <tr>
+        <td style="text-align:center;width:45px;">${i + 1}</td>
+        <td style="text-align:center;width:65px;">${it ? it.cantidad : ''}</td>
+        <td style="width:110px;">${it ? it.marca : ''}</td>
+        <td>${it ? it.descripcion : ''}</td>
+        <td style="width:115px;text-align:center;">${it ? it.estado : ''}</td>
+      </tr>
+    `);
+  }
+
+  return `
+    <div id="printableSgcSheet" class="sgc-sheet p-4">
+      <table>
+        <tr>
+          <td rowspan="3" style="width:170px;text-align:center;">${COMPANY_LOGO_SVG}</td>
+          <td rowspan="3" style="text-align:center;font-weight:bold;font-size:13px;">${titulo}</td>
+          <td style="width:150px;font-weight:bold;font-size:10px;">CODIGO: ${acta.codigoSGC}</td>
+        </tr>
+        <tr><td style="font-weight:bold;font-size:10px;">VERSIÓN: ${acta.versionSGC}</td></tr>
+        <tr><td style="font-weight:bold;font-size:10px;">FECHA: 02/08/2023</td></tr>
+      </table>
+
+      <div style="margin-top:10px;margin-bottom:8px;line-height:1.5;">
+        <div><b>Ciudad:</b> ${acta.ciudad} &nbsp;&nbsp;&nbsp;&nbsp; <b>Fecha:</b> ${acta.fecha} &nbsp;&nbsp;&nbsp;&nbsp; <b>${isEnt ? 'Salida #' : 'Entrega #'}:</b> ${acta.numero}</div>
+        <div style="margin-top:6px;">
+          Por medio del presente se hace constar que al señor(a) <b>${acta.colaborador}</b>
+          identificado(a) con cédula de ciudadanía <b>${acta.cedula}</b> ${verbo}
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr style="background:#f1f5f9;font-weight:bold;text-align:center;">
+            <th>Ítem</th>
+            <th>Cantidad</th>
+            <th>Marca</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml.join('')}</tbody>
+      </table>
+
+      <div style="margin-top:8px;border:1px solid #000;padding:6px;">
+        <b>Nota:</b> ${acta.nota || 'Sin observaciones adicionales.'}
+      </div>
+
+      <div style="margin-top:8px;">Por lo anterior, se recibe.</div>
+
+      <table style="margin-top:10px;text-align:center;">
+        <tr>
+          <td style="height:68px;width:33%;">
+            ${acta.sigs?.autorizado ? `<img src="${acta.sigs.autorizado}" style="max-height:58px;margin:0 auto;" />` : ''}
+          </td>
+          <td style="height:68px;width:33%;">
+            ${acta.sigs?.entregado ? `<img src="${acta.sigs.entregado}" style="max-height:58px;margin:0 auto;" />` : ''}
+          </td>
+          <td style="height:68px;width:34%;">
+            ${acta.sigs?.recibido ? `<img src="${acta.sigs.recibido}" style="max-height:58px;margin:0 auto;" />` : ''}
+          </td>
+        </tr>
+        <tr style="font-weight:bold;background:#f8fafc;">
+          <td>Autorizado por:<br><span style="font-weight:normal;">${acta.autorizadoNombre || ''}</span></td>
+          <td>Entregado por:<br><span style="font-weight:normal;">${acta.entregadoNombre || ''}</span></td>
+          <td>Recibido por:<br><span style="font-weight:normal;">${acta.recibidoNombre || ''}</span></td>
+        </tr>
+      </table>
+
+      ${acta.photos && acta.photos.length ? `
+        <div style="margin-top:12px;">
+          <b>Registro Fotográfico de Respaldo:</b>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+            ${acta.photos.map(p => `<img src="${p}" style="width:140px;height:105px;object-fit:cover;border:1px solid #000;" />`).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+window.openOfficialPdfPreview = function(id) {
+  const acta = window.state.actas.find(a => a.id === id);
+  if (!acta) return;
+  window.state.currentPreviewActaId = id;
+  document.getElementById('pdfRenderArea').innerHTML = buildSgcHtmlSheet(acta);
+  const modal = document.getElementById('pdfModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  if (window.lucide) lucide.createIcons();
+};
+
+window.closePdfModal = function() {
+  const modal = document.getElementById('pdfModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.downloadCurrentPDF = function() {
+  const el = document.getElementById('printableSgcSheet');
+  if (!el) return;
+  const acta = window.state.actas.find(a => a.id === window.state.currentPreviewActaId);
+  const fname = acta ? `${acta.codigoSGC}_${acta.numero}_${acta.colaborador}.pdf` : 'Acta_SGC.pdf';
+  html2pdf().set({
+    margin: 8,
+    filename: fname,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+  }).from(el).save();
+};
+
+window.downloadCurrentExcelSGC = function() {
+  if (window.state.currentPreviewActaId) {
+    downloadActaExcelSGC(window.state.currentPreviewActaId);
+  }
+};
+
+window.downloadActaExcelSGC = function(id) {
+  const acta = window.state.actas.find(a => a.id === id);
+  if (!acta) return;
+  const isEnt = acta.tipo === 'entrega';
+  const rows = [
+    ['INGENIERÍA INTEGRAL', '', isEnt ? 'ACTA DE ENTREGA DE EQUIPOS Y HERRAMIENTAS' : 'ACTA DE DEVOLUCION DE EQUIPOS Y HERRAMIENTAS', '', `CODIGO: ${acta.codigoSGC}`],
+    ['', '', '', '', `VERSIÓN: ${acta.versionSGC}`],
+    ['', '', '', '', 'FECHA: 02/08/2023'],
+    [],
+    ['Ciudad:', acta.ciudad, 'Fecha:', acta.fecha, `${isEnt ? 'Salida #' : 'Entrega #'}: ${acta.numero}`],
+    ['Señor(a):', acta.colaborador, 'Cédula:', acta.cedula],
+    [],
+    ['Ítem', 'Cantidad', 'Marca', 'Descripción', 'Estado'],
+    ...acta.items.map((it, idx) => [idx + 1, it.cantidad, it.marca, it.descripcion, it.estado]),
+    [],
+    ['Nota:', acta.nota],
+    ['Autorizado por:', acta.autorizadoNombre, 'Entregado por:', acta.entregadoNombre, 'Recibido por: ' + acta.recibidoNombre]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, isEnt ? 'ENTREGA DE MYH' : 'DEVOLUCION MYH');
+  XLSX.writeFile(wb, `${acta.codigoSGC}_${acta.numero}_${acta.colaborador}.xlsx`);
+};
+
+window.exportAllExcel = function() {
+  const rows = window.state.actas.map(a => ({
+    Codigo_SGC: a.codigoSGC,
+    Tipo: a.tipo.toUpperCase(),
+    Consecutivo: a.numero,
+    Fecha: a.fecha,
+    Ciudad: a.ciudad,
+    Colaborador: a.colaborador,
+    Cedula: a.cedula,
+    Estado: a.status,
+    Items: a.items.map(i => `${i.cantidad}x ${i.descripcion}`).join(' | '),
+    Nota: a.nota
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Mensaje: 'Sin actas registradas' }]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial_SGC');
+  XLSX.writeFile(wb, 'Reporte_General_Actas_SGC.xlsx');
+};
+
+// ============================================================================
+// 10. INVENTARIO: RENDERIZADO, EDICIÓN E IMPORTACIÓN EXCEL
+// ============================================================================
+window.renderInventoryList = function() {
+  const q = (document.getElementById('searchInvInput')?.value || '').trim().toLowerCase();
+  const onlyStock = document.getElementById('onlyStockCheck')?.checked || false;
+
+  const list = window.state.inventario.filter(it => {
+    if (onlyStock && Number(it.stock) <= 0) return false;
+    if (!q) return true;
+    return (
+      it.nombre.toLowerCase().includes(q) ||
+      it.marca.toLowerCase().includes(q) ||
+      it.codigo.toLowerCase().includes(q)
+    );
+  });
+
+  const lbl = document.getElementById('invCountLabel');
+  if (lbl) lbl.textContent = `Mostrando ${list.length} de ${window.state.inventario.length} materiales y equipos registrados`;
+
+  const tbody = document.getElementById('inventoryTableBody');
+  if (tbody) {
+    tbody.innerHTML = list.map(it => {
+      const stk = Number(it.stock);
+      const badgeCls = stk <= 0 ? 'bg-red-100 text-red-700' : (stk <= 2 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+      return `
+        <tr class="hover:bg-gray-50">
+          <td class="p-2.5 font-mono text-gray-500">${it.codigo}</td>
+          <td class="p-2.5 font-bold text-gray-700">${it.marca}</td>
+          <td class="p-2.5 font-semibold text-gray-900">${it.nombre}</td>
+          <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-semibold">${it.estado}</span></td>
+          <td class="p-2.5 text-center"><span class="px-2.5 py-1 rounded-full font-extrabold ${badgeCls}">${stk}</span></td>
+          <td class="p-2.5 text-right">
+            <button onclick="openEditCatalogModal('${it.id}')" class="text-xs font-bold text-amber-700 hover:underline mr-2">Editar</button>
+            <button onclick="deleteCatalogItem('${it.id}')" class="text-xs font-bold text-red-600 hover:underline">Eliminar</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  const mob = document.getElementById('inventoryCardsMobile');
+  if (mob) {
+    mob.innerHTML = list.map(it => {
+      const stk = Number(it.stock);
+      const badgeCls = stk <= 0 ? 'bg-red-100 text-red-700' : (stk <= 2 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+      return `
+        <div class="border border-gray-200 rounded-xl p-3 bg-white flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[10px] font-mono text-gray-400">${it.codigo} · ${it.marca}</span>
+            <p class="text-xs font-extrabold text-gray-900 truncate">${it.nombre}</p>
+            <span class="text-[10px] text-gray-500">${it.estado}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-xs font-extrabold px-2.5 py-1 rounded-full ${badgeCls}">${stk}</span>
+            <button onclick="openEditCatalogModal('${it.id}')" class="p-1.5 bg-gray-100 rounded-lg text-gray-700">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  if (window.lucide) lucide.createIcons();
+};
+
+window.openNewCatalogModal = function() {
+  document.getElementById('catModalTitle').textContent = 'Registrar Nuevo Material o Equipo';
+  document.getElementById('editCatId').value = '';
+  document.getElementById('newCatCodigo').value = 'INV-' + String(window.state.inventario.length + 1).padStart(3, '0');
+  document.getElementById('newCatMarca').value = 'UNIDAD';
+  document.getElementById('newCatNombre').value = '';
+  document.getElementById('newCatStock').value = 1;
+  document.getElementById('newCatEstado').value = 'Bueno';
+  const modal = document.getElementById('newCatalogModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.openEditCatalogModal = function(id) {
+  const it = window.state.inventario.find(x => x.id === id);
+  if (!it) return;
+  document.getElementById('catModalTitle').textContent = 'Editar Material o Stock';
+  document.getElementById('editCatId').value = it.id;
+  document.getElementById('newCatCodigo').value = it.codigo;
+  document.getElementById('newCatMarca').value = it.marca;
+  document.getElementById('newCatNombre').value = it.nombre;
+  document.getElementById('newCatStock').value = it.stock;
+  document.getElementById('newCatEstado').value = it.estado;
+  const modal = document.getElementById('newCatalogModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeNewCatalogModal = function() {
+  const modal = document.getElementById('newCatalogModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.saveNewCatalogItem = function() {
+  const editId = document.getElementById('editCatId').value;
+  const codigo = document.getElementById('newCatCodigo').value.trim().toUpperCase() || 'INV-000';
+  const marca = document.getElementById('newCatMarca').value.trim().toUpperCase() || 'UNIDAD';
+  const nombre = document.getElementById('newCatNombre').value.trim().toUpperCase();
+  const stock = parseFloat(document.getElementById('newCatStock').value) || 0;
+  const estado = document.getElementById('newCatEstado').value;
+
+  if (!nombre) {
+    showToast('Ingresa el nombre o descripción del material', 'warning');
+    return;
+  }
+
+  if (editId) {
+    const it = window.state.inventario.find(x => x.id === editId);
+    if (it) Object.assign(it, { codigo, marca, nombre, stock, estado });
+  } else {
+    window.state.inventario.unshift({
+      id: 'inv-' + Date.now(),
+      codigo,
+      marca,
+      nombre,
+      stock,
+      estado
+    });
+  }
+
+  saveAllToStorage();
+  renderInventoryList();
+  refreshDashboard();
+  closeNewCatalogModal();
+  showToast('Inventario actualizado correctamente');
+};
+
+window.deleteCatalogItem = function(id) {
+  window.state.inventario = window.state.inventario.filter(x => x.id !== id);
+  saveAllToStorage();
+  renderInventoryList();
+  refreshDashboard();
+  showToast('Ítem eliminado del inventario');
+};
+
+window.importInventoryExcel = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const nuevosItems = [];
+      let count = 0;
+
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        if (!matrix || matrix.length === 0) return;
+
+        let headerIdx = matrix.findIndex(r =>
+          r.some(cell => ['nombre', 'descripcion', 'descripción', 'elemento', 'material', 'producto'].includes(String(cell).trim().toLowerCase()))
+        );
+        if (headerIdx < 0) headerIdx = 0;
+
+        const headers = matrix[headerIdx].map(h => String(h).trim().toLowerCase());
+        const colNombre = headers.findIndex(h => ['nombre', 'descripcion', 'descripción', 'elemento', 'material', 'producto'].includes(h));
+        const colUnidad = headers.findIndex(h => h.includes('unidad') || h.includes('marca') || h.includes('medida'));
+        const colCantidad = headers.findIndex(h => h.includes('cantidad') || h.includes('stock') || h.includes('disponible') || h.includes('existencia'));
+        const colCodigo = headers.findIndex(h => h.includes('código') || h.includes('codigo') || h === 'item' || h === 'ítem');
+        const colEstado = headers.findIndex(h => h === 'estado');
+
+        for (let i = headerIdx + 1; i < matrix.length; i++) {
+          const row = matrix[i];
+          if (!row || row.every(c => String(c).trim() === '')) continue;
+
+          let nombre = '';
+          if (colNombre >= 0) {
+            nombre = String(row[colNombre] || '').trim().toUpperCase();
+          } else {
+            const texts = row.map(c => String(c).trim()).filter(s => s && isNaN(Number(s)));
+            nombre = (texts.sort((a, b) => b.length - a.length)[0] || '').toUpperCase();
+          }
+
+          if (!nombre || ['NOMBRE', 'DESCRIPCIÓN', 'DESCRIPCION', 'ELEMENTO', 'MATERIAL'].includes(nombre) || nombre.startsWith('TOTAL')) continue;
+
+          const codigo = String(colCodigo >= 0 && row[colCodigo] ? row[colCodigo] : `INV-${String(count + 1).padStart(3, '0')}`).trim();
+          const marca = String(colUnidad >= 0 && row[colUnidad] ? row[colUnidad] : 'UNIDAD').trim().toUpperCase();
+          let stockVal = 0;
+          if (colCantidad >= 0) {
+            stockVal = parseFloat(String(row[colCantidad]).replace(',', '.')) || 0;
+          } else {
+            const numCell = row.find(c => typeof c === 'number' || (!isNaN(parseFloat(String(c).replace(',', '.'))) && String(c).trim() !== ''));
+            stockVal = numCell !== undefined ? (parseFloat(String(numCell).replace(',', '.')) || 0) : 0;
+          }
+          const estado = String(colEstado >= 0 && row[colEstado] ? row[colEstado] : 'Bueno').trim() || 'Bueno';
+
+          nuevosItems.push({
+            id: 'inv-xlsx-' + Date.now() + '-' + count,
+            codigo,
+            marca,
+            nombre,
+            stock: stockVal,
+            estado
+          });
+          count++;
+        }
+      });
+
+      if (nuevosItems.length > 0) {
+        window.state.inventario = nuevosItems;
+        saveAllToStorage();
+        renderInventoryList();
+        refreshDashboard();
+        showToast(`¡Excel cargado completo! ${count} ítems importados de todas las hojas.`);
+      } else {
+        showToast('No se encontraron filas válidas en el Excel', 'warning');
+      }
+    } catch (err) {
+      showToast('No se pudo importar el archivo Excel', 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+};
+
+window.resetDefaultInventory = function() {
+  window.state.inventario = RAW_INVENTARIO.map((row, idx) => ({
+    id: 'inv-' + (idx + 1),
+    codigo: `INV-${String(idx + 1).padStart(3, '0')}`,
+    marca: String(row[0] || 'UNIDAD'),
+    nombre: String(row[1] || ''),
+    stock: Number(row[2]) || 0,
+    estado: 'Bueno'
+  }));
+  saveAllToStorage();
+  renderInventoryList();
+  refreshDashboard();
+  showToast(`Inventario base recargado (${window.state.inventario.length} ítems)`);
+};
+
+// ============================================================================
+// 11. DIRECTORIO DE PERSONAL, GOOGLE DRIVE Y RESPALDOS
+// ============================================================================
+window.renderPersonalDirectory = function() {
+  const q = (document.getElementById('searchPersonalInput')?.value || '').trim().toLowerCase();
+  const list = window.state.personal.filter(p =>
+    !q || p.nombre.toLowerCase().includes(q) || String(p.identificacion).includes(q)
+  );
+  const box = document.getElementById('personalDirectoryList');
+  if (!box) return;
+  box.innerHTML = list.map((p, idx) => `
+    <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs">
+      <div>
+        <p class="font-extrabold text-gray-900">${p.nombre}</p>
+        <p class="text-[11px] font-mono text-gray-500">CC: ${p.identificacion}</p>
+      </div>
+      <button onclick="deletePersonal(${idx})" class="text-red-500 hover:bg-red-50 p-1.5 rounded-lg">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+};
+
+window.openNewPersonalModal = function() {
+  document.getElementById('newPerNombre').value = '';
+  document.getElementById('newPerCedula').value = '';
+  const modal = document.getElementById('newPersonalModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeNewPersonalModal = function() {
+  const modal = document.getElementById('newPersonalModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.saveNewPersonal = function() {
+  const nombre = document.getElementById('newPerNombre').value.trim().toUpperCase();
+  const identificacion = document.getElementById('newPerCedula').value.trim();
+  if (!nombre || !identificacion) {
+    showToast('Ingresa nombre y cédula', 'warning');
+    return;
+  }
+  window.state.personal.push({ nombre, identificacion });
+  saveAllToStorage();
+  populatePersonalDatalist();
+  renderPersonalDirectory();
+  closeNewPersonalModal();
+  showToast('Colaborador agregado al directorio');
+};
+
+window.deletePersonal = function(idx) {
+  window.state.personal.splice(idx, 1);
+  saveAllToStorage();
+  populatePersonalDatalist();
+  renderPersonalDirectory();
+};
+
+window.importPersonalExcel = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+      let added = 0;
+      rows.forEach(r => {
+        const nombre = String(r.Nombre || r.NOMBRE || '').trim().toUpperCase();
+        const identificacion = String(r.Identificacion || r.Cedula || r.CEDULA || '').trim();
+        if (nombre && identificacion) {
+          window.state.personal.push({ nombre, identificacion });
+          added++;
+        }
+      });
+      saveAllToStorage();
+      populatePersonalDatalist();
+      renderPersonalDirectory();
+      showToast(`${added} colaboradores importados`);
+    } catch (err) {
+      showToast('Error al leer Excel de personal', 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+};
+
+window.saveDriveConfig = function() {
+  window.state.drive = {
+    scriptUrl: document.getElementById('driveScriptUrl').value.trim(),
+    folderId: document.getElementById('driveFolderId').value.trim(),
+    autoSync: document.getElementById('driveAutoSyncCheck').checked
+  };
+  saveAllToStorage();
+  showToast('Configuración de Google Drive guardada');
+};
+
+async function syncSingleActaToDrive(actaObj) {
+  if (!window.state.drive.scriptUrl) return;
+  try {
+    await fetch(window.state.drive.scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId: window.state.drive.folderId, acta: actaObj })
+    });
+  } catch (e) {}
+}
+
+window.syncNowToDrive = async function() {
+  if (!window.state.drive.scriptUrl) {
+    showToast('Ingresa primero la URL del conector Google Apps Script', 'warning');
+    return;
+  }
+  try {
+    await fetch(window.state.drive.scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folderId: window.state.drive.folderId,
+        backup: { actas: window.state.actas, inventario: window.state.inventario, personal: window.state.personal }
+      })
+    });
+    showToast('Respaldo enviado a Google Drive correctamente');
+  } catch (e) {
+    showToast('Error sincronizando con Google Drive', 'error');
+  }
+};
+
+window.exportFullDatabaseJSON = function() {
+  const blob = new Blob([JSON.stringify({
+    personal: window.state.personal,
+    inventario: window.state.inventario,
+    actas: window.state.actas
+  }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Respaldo_SGC_Ingenieria_Integral_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+};
+
+window.importFullDatabaseJSON = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (Array.isArray(data.personal)) window.state.personal = data.personal;
+      if (Array.isArray(data.inventario)) window.state.inventario = data.inventario;
+      if (Array.isArray(data.actas)) window.state.actas = data.actas;
+      saveAllToStorage();
+      populatePersonalDatalist();
+      renderInventoryList();
+      refreshDashboard();
+      showToast('Respaldo JSON restaurado con éxito');
+    } catch (err) {
+      showToast('Archivo JSON inválido', 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+};
+
+window.downloadInventoryTemplate = function() {
+  const ws = XLSX.utils.json_to_sheet([
+    { Código: 'INV-001', 'Unidad de medida': 'UNIDAD', Nombre: 'TALADRO PERCUTOR BOSCH', 'Cantidad disponible': 5, Estado: 'Bueno' }
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+  XLSX.writeFile(wb, 'Plantilla_Inventario_SGC.xlsx');
+};
+
+window.downloadPersonalTemplate = function() {
+  const ws = XLSX.utils.json_to_sheet([
+    { Nombre: 'JUAN PEREZ', Identificacion: '1140000000' }
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PERSONAL');
+  XLSX.writeFile(wb, 'Plantilla_Personal_SGC.xlsx');
+};
+
+// ============================================================================
+// 12. ENLACE DE FIRMA REMOTA EN CELULAR
+// ============================================================================
+window.shareActaLink = function(tipo) {
+  const isEnt = tipo === 'entrega';
+  const p = isEnt ? 'ent' : 'dev';
+  const colaborador = document.getElementById(p + 'Colaborador').value.trim().toUpperCase();
+  const cedula = document.getElementById(p + 'Cedula').value.trim();
+  const items = isEnt ? window.state.entItems : window.state.devItems;
+  if (!colaborador || items.length === 0) {
+    showToast('Selecciona un colaborador y al menos 1 elemento antes de compartir', 'warning');
+    return;
+  }
+  const payload = {
+    tipo,
+    codigoSGC: isEnt ? 'FM-AF-011' : 'FM-AF-016',
+    numero: document.getElementById(p + 'Numero').value,
+    fecha: document.getElementById(p + 'Fecha').value,
+    colaborador,
+    cedula,
+    nota: document.getElementById(p + 'Nota').value,
+    items: items.map(i => ({ cantidad: i.cantidad, marca: i.marca, descripcion: i.descripcion, estado: i.estado }))
+  };
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(payload));
+  const url = `${window.location.origin}${window.location.pathname}?sign=${compressed}`;
+  document.getElementById('generatedShareUrl').value = url;
+  document.getElementById('whatsappShareBtn').href = `https://wa.me/?text=${encodeURIComponent('Hola ' + colaborador + ', por favor firma tu acta SGC de Ingeniería Integral aquí: ' + url)}`;
+  const modal = document.getElementById('shareLinkModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeShareModal = function() {
+  const modal = document.getElementById('shareLinkModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+
+window.copyShareUrl = function() {
+  const ta = document.getElementById('generatedShareUrl');
+  ta.select();
+  document.execCommand('copy');
+  showToast('Enlace copiado al portapapeles');
+};
+
+let directRemoteCanvasObj = null;
+function checkRemoteSignParam() {
+  const params = new URLSearchParams(window.location.search);
+  const signParam = params.get('sign');
+  if (!signParam) return false;
+  try {
+    const data = JSON.parse(LZString.decompressFromEncodedURIComponent(signParam));
+    if (!data) return false;
+    window.state.remotePayload = data;
+    document.getElementById('mainAppContainer').classList.add('hidden');
+    document.getElementById('desktopSidebar').classList.add('lg:hidden');
+    document.getElementById('bottomNav').classList.add('hidden');
+    document.getElementById('remoteSignerContainer').classList.remove('hidden');
+
+    document.getElementById('remDocCode').textContent = data.codigoSGC;
+    document.getElementById('remDocTitle').textContent = data.tipo === 'entrega' ? 'Acta de Entrega para Firma' : 'Acta de Devolución para Firma';
+    document.getElementById('remDocNumero').textContent = '# ' + data.numero;
+    document.getElementById('remColaborador').textContent = data.colaborador;
+    document.getElementById('remCedulaFecha').textContent = `CC: ${data.cedula} · Fecha: ${data.fecha}`;
+    document.getElementById('remItemsList').innerHTML = data.items.map((it, i) => `
+      <div class="p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs">
+        <b>${i + 1}. (${it.cantidad}) ${it.marca}</b> — ${it.descripcion}
+      </div>
+    `).join('');
+    if (data.nota) {
+      const nb = document.getElementById('remNotaBox');
+      nb.textContent = 'Nota: ' + data.nota;
+      nb.classList.remove('hidden');
+    }
+    setTimeout(() => {
+      directRemoteCanvasObj = setupCanvasDrawing('directRemoteCanvas');
+    }, 100);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+window.clearDirectRemoteCanvas = function() {
+  if (!directRemoteCanvasObj) return;
+  directRemoteCanvasObj.ctx.clearRect(0, 0, directRemoteCanvasObj.canvas.width, directRemoteCanvasObj.canvas.height);
+};
+
+window.submitDirectRemoteSignature = function() {
+  if (!directRemoteCanvasObj || !window.state.remotePayload) return;
+  const sig = directRemoteCanvasObj.canvas.toDataURL('image/png');
+  const d = window.state.remotePayload;
+  const actaObj = {
+    id: 'acta-' + Date.now(),
+    tipo: d.tipo,
+    codigoSGC: d.codigoSGC,
+    versionSGC: d.tipo === 'entrega' ? '03' : '02',
+    numero: Number(d.numero) || 1,
+    fecha: d.fecha,
+    ciudad: 'Barranquilla',
+    colaborador: d.colaborador,
+    cedula: d.cedula,
+    items: d.items,
+    nota: d.nota || '',
+    photos: [],
+    sigs: d.tipo === 'entrega' ? { recibido: sig } : { entregado: sig },
+    autorizadoNombre: '',
+    entregadoNombre: d.tipo === 'entrega' ? 'Almacén' : d.colaborador,
+    recibidoNombre: d.tipo === 'entrega' ? d.colaborador : 'Almacén',
+    linkedSalidaId: '',
+    status: d.tipo === 'entrega' ? 'PENDING' : 'CUMPLIDO',
+    createdAt: new Date().toISOString()
+  };
+  window.state.actas.unshift(actaObj);
+  window.state.currentPreviewActaId = actaObj.id;
+  document.getElementById('pdfRenderArea').innerHTML = buildSgcHtmlSheet(actaObj);
+  saveAllToStorage();
+  document.getElementById('remoteSuccessCard').classList.remove('hidden');
+  showToast('¡Firma registrada correctamente!');
+};
+
+// ============================================================================
+// 13. ARRANQUE DEL APLICATIVO
+// ============================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const sideLogo = document.getElementById('sidebarLogoBox');
+  const headLogo = document.getElementById('headerLogoBox');
+  if (sideLogo) sideLogo.innerHTML = COMPANY_LOGO_SVG;
+  if (headLogo) headLogo.innerHTML = COMPANY_LOGO_SVG;
+
+  loadInitialData();
+
+  if (document.getElementById('driveScriptUrl')) {
+    document.getElementById('driveScriptUrl').value = window.state.drive.scriptUrl || '';
+    document.getElementById('driveFolderId').value = window.state.drive.folderId || '';
+    document.getElementById('driveAutoSyncCheck').checked = window.state.drive.autoSync !== false;
+  }
+
+  populatePersonalDatalist();
+  initDatesAndCounters();
+  renderActaItems('ent');
+  renderActaItems('dev');
+  renderPhotosGrid('ent');
+  renderPhotosGrid('dev');
+
+  if (!checkRemoteSignParam()) {
+    switchTab('inicio');
+  }
+
+  if (window.lucide) lucide.createIcons();
+});
+</script>
+</body>
+</html>
